@@ -245,8 +245,12 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal server error' })
 })
 
-app.listen(PORT, () => {
-  console.log(`\n🚀 BLAST Backend proxy server running on http://localhost:${PORT}`)
-  console.log(`📍 Frontend should be running on http://localhost:5173`)
-  console.log(`✅ Providers supported: Groq | OpenRouter | Gemini | OpenAI\n`)
-})
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`\n🚀 BLAST Backend proxy server running on http://localhost:${PORT}`)
+    console.log(`📍 Frontend should be running on http://localhost:5173`)
+    console.log(`✅ Providers supported: Groq | OpenRouter | Gemini | OpenAI\n`)
+  })
+}
+
+export default app

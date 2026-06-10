@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useSettings, AIProvider } from '../context/SettingsContext'
 import aiService, { AIModel } from '../services/aiService'
-import jiraService from '../services/jiraService'
+
+const API_BASE = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'http://localhost:3001/api' : '/api')
 
 const PROVIDERS: { id: AIProvider; label: string; icon: string; placeholder: string; getUrl: string }[] = [
   { id: 'groq', label: 'Groq', icon: '⚡', placeholder: 'gsk_...', getUrl: 'https://console.groq.com/keys' },
@@ -70,7 +71,7 @@ export default function LeftPanel() {
     setTestingJira(true)
     setJiraStatus(null)
     try {
-      const resp = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/jira/test`, {
+      const resp = await fetch(`${API_BASE}/jira/test`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(settings.jira)
@@ -82,7 +83,7 @@ export default function LeftPanel() {
         setJiraStatus({ ok: false, msg: data.error || 'Connection failed' })
       }
     } catch {
-      setJiraStatus({ ok: false, msg: 'Cannot reach backend server (port 3001).' })
+      setJiraStatus({ ok: false, msg: 'Cannot reach backend server.' })
     } finally {
       setTestingJira(false)
     }

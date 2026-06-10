@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { SettingsProvider, useSettings } from './context/SettingsContext'
 import Header from './components/Header'
 import LeftPanel from './components/LeftPanel'
