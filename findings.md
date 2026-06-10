@@ -23,9 +23,14 @@
 - `OPENAI_KEY` – OpenAI API key (optional)
 
 ### App `.env.local`
-- `VITE_API_URL=http://localhost:3001/api` — backend proxy address
+- `VITE_API_URL=http://localhost:3001/api` — backend proxy address (local fallback only)
 
-> **Note:** API keys are primarily managed via the in-app left-pane settings UI and persisted to localStorage. `.env` keys are for reference/server bootstrapping only.
+### Vercel Serverless Architecture (v2.2)
+- **Zero CORS in Production:** The Express backend runs as a Vercel Serverless Function under `app/api/index.mjs` using `@vercel/node`.
+- **Dynamic API Base Resolution:** Frontend API bases (`API_BASE`) resolve dynamically depending on current hostname:
+  - If `localhost`/`127.0.0.1` (local dev) → `http://localhost:3001/api`
+  - If hosted (Vercel deployment) → `/api` (same origin proxying to Vercel Serverless Function)
+- **Vercel Routing:** Handled via `app/vercel.json` rewrites (`/api/*` to serverless function, everything else to SPA `/index.html`).
 
 ## AI Provider Support (v2.0)
 | Provider | API Base | Free Tier | Key Format |

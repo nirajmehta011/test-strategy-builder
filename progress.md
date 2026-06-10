@@ -50,10 +50,20 @@
 - ✅ **Enhanced components** — JiraIDInput, StrategyDisplay, StrategyCard, ExportBar all redesigned
 - ✅ **Updated BLAST docs** — findings.md, progress.md, .env, .env.example all current
 
-## Phase 5: Trigger (Current)
+## Phase 5: Trigger ✅
 - ✅ App running locally via `npm run dev:full` (port 5173 + 3001)
-- Preparing for production deployment
-- See DEPLOYMENT_COMPLETE.md for cloud deployment options
+- ✅ Converted Express server to Serverless Function for Vercel
+- ✅ Set up `app/vercel.json` rewrites and routing rules
+- ✅ Made frontend API routing dynamic (automatically proxies to serverless in production)
+- ✅ Fixed strict TS compiler configurations to allow seamless Vercel production build
+- ✅ Cleaned up all legacy JS files and dead components
+- ✅ Pushed all changes to GitHub main branch
+
+## Vercel Deployment Instructions
+1. Import repository `test-strategy-builder` on Vercel dashboard.
+2. Set the **Root Directory** setting to `app`.
+3. Keep standard settings (Vercel automatically detects Vite).
+4. Click Deploy! No environment variables are strictly required since keys are managed dynamically in-app.
 
 ## Known Issues / Watch List
 - Groq API account restriction (org-level, not code issue) — mitigated by multi-provider support
