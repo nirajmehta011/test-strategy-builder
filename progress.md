@@ -161,3 +161,19 @@
 | `src/services/exportService.ts` | Upgraded `parseCSVToTestCases` with dynamic delimiter logic, normalization helper, and expanded aliases. |
 | `src/services/aiService.ts` | Updated `generatePlaywrightTests` to batch requests in sizes of 5, added chunk prompts, and merged results with graceful fallbacks. |
 | `src/components/JiraIDInput.tsx` | Renamed CSV action button to "Automate Any Cases" and softened exact mapping validation error text. |
+
+## v4.3 – Excel and PDF Support for "Automate Any Cases" ✅
+
+### New Features Implemented
+- ✅ **Excel Upload Parser** — Dynamically load SheetJS from CDN, read array buffer of uploaded xlsx/xls sheets, and convert to CSV format for processing.
+- ✅ **PDF Upload Parser** — Dynamically load PDF.js from CDN, parse array buffer to extract plain text from all pages.
+- ✅ **AI-Driven PDF Extraction** — Send PDF text to the AI model to structure and extract test cases matching the JSON schema, then automate the suite.
+- ✅ **File Accept Filter** — Modified drag-and-drop zone to accept `.csv`, `.xlsx`, `.xls`, and `.pdf` files.
+
+### Files Modified
+| File | Change |
+|------|--------|
+| `src/services/exportService.ts` | Added script loading utility, SheetJS Excel reader, and PDF.js text extractor. |
+| `src/services/aiService.ts` | Added PDF test case extraction prompt and callAI query handler. |
+| `src/components/TestStrategyPage.tsx` | Renamed orchestrator to handleAutomateFile, calling AI extraction for PDF raw text inputs. |
+| `src/components/JiraIDInput.tsx` | Expanded accept tags, routed file buffers by suffix format, and renamed props to onAutomateFile. |

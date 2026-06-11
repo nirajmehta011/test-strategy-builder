@@ -66,6 +66,7 @@
 23. **Output Tabs** — All 3 generation outputs persist independently; switch between them via tabs.
 24. **Dark Mode** — default dark, persisted to localStorage.
 25. **Complete Batch Automation (v4.2)** — Automated test case suites are chunked into batches of 5, preventing Vercel function timeouts and ensuring complete Playwright code is written for every single test case without placeholders.
+26. **Excel & PDF Automation Support (v4.3)** — Extended "Automate Any Cases" to accept Excel (.xlsx, .xls) and PDF (.pdf) files directly. Excel files are parsed client-side via SheetJS, and PDFs are parsed via client-side PDF.js followed by AI-driven test case extraction.
 
 ## New Dependencies (v4.1)
 | Package | Version | Purpose |
