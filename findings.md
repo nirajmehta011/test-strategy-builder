@@ -54,7 +54,7 @@
 11. **Dynamic Test Case Counts** — ticket complexity determines initial test case counts (enforcing at least 10-15 cases initially) instead of a hardcoded 15.
 12. **Incremental Test Case Expansion** — "Add More Test Cases" button generates 5-10 additional test cases (starting at next TC number, e.g. TC-019) and merges them into the table.
 13. **Playwright + TypeScript Automation** — "Automate Test Cases" button generates a full Playwright automation framework with specs for each test case.
-14. **Direct CSV Import & Automation** — Added "Automate CSV" module in the selector allowing users to drag and drop or browse any test cases CSV file directly to parse and generate automated Playwright suites immediately.
+14. **Direct CSV Import & Automation (v4.2)** — Added "Automate Any Cases" module in the selector allowing users to drag and drop or browse any test cases CSV file (with flexible column headers like Name/Summary, Objective/Description, and automatic delimiter detection) to parse and generate automated Playwright suites immediately.
 15. **Adaptive Custom Scenarios** — Detects when standard cases are fully covered, providing a custom scenario input panel where users can type specific workflows to generate new test cases on-demand.
 16. **Interactive Framework Explorer** — View generated configs (`package.json`, `playwright.config.ts`, `tsconfig.json`) and test specs in a tabbed UI code preview.
 17. **Automation Exports** — Download Playwright tests as a detailed markdown file or a ready-to-run ZIP bundle.
@@ -65,6 +65,7 @@
 22. **Statistics Dashboard** — Case count, step count, per-type breakdown at a glance.
 23. **Output Tabs** — All 3 generation outputs persist independently; switch between them via tabs.
 24. **Dark Mode** — default dark, persisted to localStorage.
+25. **Complete Batch Automation (v4.2)** — Automated test case suites are chunked into batches of 5, preventing Vercel function timeouts and ensuring complete Playwright code is written for every single test case without placeholders.
 
 ## New Dependencies (v4.1)
 | Package | Version | Purpose |

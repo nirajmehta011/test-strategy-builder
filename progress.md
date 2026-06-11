@@ -148,3 +148,16 @@
 | `findings.md` | Update feature log and versions |
 
 
+## v4.2 – Robust CSV Header Parsing & Complete Batch Automation ✅
+
+### New Features Implemented
+- ✅ **Normalized Column Mapping & Delimiter Autodetect** — Supported dynamic separator detection and normalized header mapping (stripping punctuation/spaces for exact and substring alias checks) to handle flexible CSV uploads (e.g. mapping `Name/Summary` and `Objective/Description`).
+- ✅ **Sequential Client-Side Batch Automation** — Divided test case automation requests into chunks of 5. This avoids Vercel's 10-second timeout limits and Gemini's 4000 output token limit, fully implementing Playwright TypeScript code for all spec files in the suite.
+- ✅ **Consistent UI Labeling** — Renamed CSV action labels to "Automate Any Cases" in the user interface.
+
+### Files Modified
+| File | Change |
+|------|--------|
+| `src/services/exportService.ts` | Upgraded `parseCSVToTestCases` with dynamic delimiter logic, normalization helper, and expanded aliases. |
+| `src/services/aiService.ts` | Updated `generatePlaywrightTests` to batch requests in sizes of 5, added chunk prompts, and merged results with graceful fallbacks. |
+| `src/components/JiraIDInput.tsx` | Renamed CSV action button to "Automate Any Cases" and softened exact mapping validation error text. |
