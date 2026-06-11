@@ -15,7 +15,7 @@ const MODES: { id: GenerationMode; icon: string; label: string; sublabel: string
   { id: 'strategy',     icon: '🎯', label: 'Test Strategy', sublabel: 'Risk-based QA approach', color: '#6366f1' },
   { id: 'plan',         icon: '📋', label: 'Test Plan',     sublabel: 'RICE-POT framework',      color: '#8b5cf6' },
   { id: 'cases',        icon: '🧪', label: 'Test Cases',    sublabel: 'Jira/Zephyr format',      color: '#06b6d4' },
-  { id: 'automate_csv', icon: '🤖', label: 'Automate CSV',  sublabel: 'Playwright from CSV file',color: '#10b981' },
+  { id: 'automate_csv', icon: '🤖', label: 'Automate Any Cases', sublabel: 'Playwright from CSV file',color: '#10b981' },
 ]
 
 export default function JiraIDInput({ onGenerate, onAutomateCSV, loading, activeMode }: JiraIDInputProps) {
@@ -55,7 +55,7 @@ export default function JiraIDInput({ onGenerate, onAutomateCSV, loading, active
         const text = event.target?.result as string
         const cases = parseCSVToTestCases(text)
         if (cases.length === 0) {
-          setValidationError('No valid test cases found in CSV. Please verify that column headers match: "Summary", "Step Action", etc.')
+          setValidationError('No valid test cases found in the CSV file. Please verify that the CSV contains at least a column mapping to the test case summary or name.')
           return
         }
         setValidationError(null)
@@ -172,7 +172,7 @@ export default function JiraIDInput({ onGenerate, onAutomateCSV, loading, active
                   Parsing & Automating...
                 </>
               ) : (
-                <>🤖 Automate Cases from CSV</>
+                <>🤖 Automate Any Cases</>
               )}
             </button>
           )}

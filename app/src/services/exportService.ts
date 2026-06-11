@@ -460,6 +460,10 @@ export async function exportPlaywrightAsZip(data: PlaywrightAutomationData, jira
 }
 
 // ─── Parse CSV back to TestCases ───────────────────────────────────────────────
+const normalizeHeader = (str: string): string => {
+  return str.toLowerCase().replace(/[^a-z0-9]/g, '')
+}
+
 export function parseCSVToTestCases(csvText: string): TestCase[] {
   const lines: string[] = []
   let currentLine = ''
@@ -482,7 +486,31 @@ export function parseCSVToTestCases(csvText: string): TestCase[] {
 
   if (lines.length <= 1) return []
 
-  // Parse CSV row respecting quoted strings
+  // Auto-detect delimiter: comma, semicolon, tab, or pipe
+  const firstLine = lines[0] || ''
+  let delimiter = ','
+  const delimiters = [',', ';', '\t', '|']
+  let maxCount = -1
+  for (const d of delimiters) {
+    let count = 0
+    let inside = false
+    for (let i = 0; i < firstLine.length; i++) {
+      if (firstLine[i] === '"') {
+        inside = !inside
+      } else if (firstLine[i] === d && !inside) {
+        count++
+      }
+    }
+    if (count > maxCount) {
+      maxCount = count
+      delimiter = d
+    }
+  }
+  if (maxCount <= 0) {
+    delimiter = ','
+  }
+
+  // Parse CSV row respecting quoted strings and custom delimiter
   const parseCSVRow = (rowText: string): string[] => {
     const cells: string[] = []
     let currentCell = ''
@@ -496,7 +524,7 @@ export function parseCSVToTestCases(csvText: string): TestCase[] {
         } else {
           inside = !inside
         }
-      } else if (char === ',' && !inside) {
+      } else if (char === delimiter && !inside) {
         cells.push(currentCell.trim())
         currentCell = ''
       } else {
@@ -509,23 +537,52 @@ export function parseCSVToTestCases(csvText: string): TestCase[] {
 
   const headers = parseCSVRow(lines[0])
   const getColIndex = (names: string[]): number => {
-    return headers.findIndex(h => names.some(n => h.toLowerCase() === n.trim().toLowerCase()))
+    const normalizedNames = names.map(n => normalizeHeader(n))
+    
+    // 1. Try exact matches on normalized headers
+    let idx = headers.findIndex(h => {
+      const val = normalizeHeader(h)
+      return normalizedNames.some(n => val === n)
+    })
+    if (idx !== -1) return idx
+
+    // 2. Try substring match on normalized headers (e.g. "namesummary" includes "summary")
+    idx = headers.findIndex(h => {
+      const val = normalizeHeader(h)
+      return normalizedNames.some(n => val.includes(n) || n.includes(val))
+    })
+    return idx
   }
 
-  const colSummary = getColIndex(['summary'])
-  const colIssueType = getColIndex(['issue type', 'issue_type', 'type'])
-  const colPriority = getColIndex(['priority'])
-  const colLabels = getColIndex(['labels'])
-  const colTestType = getColIndex(['test type', 'test_type'])
-  const colScenarioType = getColIndex(['scenario type', 'scenario_type'])
-  const colComponent = getColIndex(['component'])
-  const colEstTime = getColIndex(['estimated time', 'estimated_time', 'time'])
-  const colPrecondition = getColIndex(['precondition'])
-  const colStepNum = getColIndex(['step #', 'step_number', 'step'])
-  const colStepAction = getColIndex(['step action', 'step_action', 'action'])
-  const colStepData = getColIndex(['step data', 'step_data', 'data'])
-  const colStepExpected = getColIndex(['step expected result', 'step_expected_result', 'expected', 'expected result'])
-  const colStatus = getColIndex(['status'])
+  // Expanded aliases mapping
+  let colSummary = getColIndex(['summary', 'name', 'title', 'subject', 'testcase', 'test case', 'scenario', 'feature', 'test case summary', 'test case title', 'test summary'])
+  if (colSummary === -1 && headers.length > 0) colSummary = 0 // Fallback to first column
+
+  const colIssueType = getColIndex(['issue type', 'issue_type', 'type', 'tracker'])
+  const colPriority = getColIndex(['priority', 'severity', 'importance'])
+  const colLabels = getColIndex(['labels', 'tags', 'label', 'tag'])
+  const colTestType = getColIndex(['test type', 'test_type', 'type of test'])
+  const colScenarioType = getColIndex(['scenario type', 'scenario_type', 'scenario'])
+  const colComponent = getColIndex(['component', 'module', 'section', 'feature area'])
+  const colEstTime = getColIndex(['estimated time', 'estimated_time', 'time', 'duration', 'est time'])
+  
+  let colPrecondition = getColIndex(['precondition', 'preconditions', 'objective', 'description', 'pre-condition', 'test precondition', 'summary description'])
+  
+  const colStepNum = getColIndex(['step #', 'step_number', 'step', 'index', 'step no', 'step number', 'number'])
+  
+  let colStepAction = getColIndex(['step action', 'step_action', 'action', 'step description', 'steps', 'test steps', 'step content', 'description of step'])
+  // Collision check: if step action matches summary or precondition (e.g. because of the word "description"), resolve it correctly
+  if (colStepAction === colSummary || colStepAction === colPrecondition) {
+    colStepAction = headers.findIndex((h, index) => 
+      index !== colSummary && 
+      index !== colPrecondition && 
+      (h.toLowerCase().includes('action') || h.toLowerCase().includes('step') || h.toLowerCase().includes('description'))
+    )
+  }
+  
+  const colStepData = getColIndex(['step data', 'step_data', 'data', 'test data', 'input', 'test_data', 'step input'])
+  const colStepExpected = getColIndex(['step expected result', 'step_expected_result', 'expected', 'expected result', 'result', 'expected_result', 'step expected', 'expected outcome'])
+  const colStatus = getColIndex(['status', 'state', 'result status'])
 
   const testCases: TestCase[] = []
   let currentTC: TestCase | null = null

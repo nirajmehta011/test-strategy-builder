@@ -577,7 +577,7 @@ JSON Schema to follow:
   "testFiles": [
     {
       "filename": "tests/TC-001.spec.ts",
-      "code": "TypeScript Playwright test script for TC-001. Follow top-notch practices: import test and expect, add comments for each step, use correct page actions, define mock selectors, use proper expectations..."
+      "code": "TypeScript Playwright test script for TC-001..."
     }
   ]
 }
@@ -590,8 +590,52 @@ Test Automation Best Practices to follow:
 5. Since there is no live application, use logical selectors (like \`page.getByRole('button', { name: 'Submit' })\` or custom placeholders like \`page.locator('#submit-btn')\`) and document them with comments.
 6. Provide helpful comments corresponding to the test case steps.
 7. Include mock data or parameters in the test files based on the 'testData' field.
+8. CRITICAL REQUIREMENT: You MUST generate the complete, fully implemented Playwright TypeScript code for EACH and EVERY test case provided in the input list. Do not use draft structures, mock structures, or skip any test cases. Provide complete spec files for all test cases.
 
-To avoid truncation and fit the response window, focus on implementing the test specs for the first 10-15 core test cases. For any remaining test cases, write a draft test structure with step comments, so that the code is complete and not truncated.
+Output ONLY the raw JSON object. Start with { and end with }`
+}
+
+const buildAutomateChunkPrompt = (jiraIssue: any, testCases: TestCase[]) => {
+  const serializedCases = testCases.map(tc => {
+    return `ID: ${tc.id}
+Summary: ${tc.summary}
+Precondition: ${tc.precondition}
+Steps:
+${tc.steps.map(s => `  ${s.stepNumber}. Action: ${s.action} | Data: ${s.testData} | Expected: ${s.expectedResult}`).join('\n')}`
+  }).join('\n\n')
+
+  return `You are a senior test automation engineer with 15+ years of experience in Playwright, TypeScript, and modern test automation design patterns.
+You are automating a subset of test cases for the following Jira issue.
+
+Jira Issue: ${jiraIssue.key}
+Summary: ${jiraIssue.summary}
+
+Here are the test cases to automate in this batch:
+${serializedCases}
+
+Task:
+Generate Playwright TypeScript test spec files for ONLY the test cases in this batch.
+Your output must be a single raw JSON object matching the schema below. Do not output any markdown code fences (like \`\`\`json), no text before or after the JSON.
+
+JSON Schema to follow:
+{
+  "testFiles": [
+    {
+      "filename": "tests/TC-006.spec.ts",
+      "code": "TypeScript Playwright test script code for TC-006..."
+    }
+  ]
+}
+
+Test Automation Best Practices to follow:
+1. Each test case MUST have its own separate spec file under the \`tests/\` folder (e.g., \`tests/TC-006.spec.ts\`).
+2. Write clean, robust, and readable Playwright TypeScript code.
+3. Import \`test\` and \`expect\` from \`@playwright/test\`.
+4. Implement all steps of the test case, representing them as clear actions (e.g., navigating, clicking, typing) and expectations (e.g., expecting visibility, text matches, URL states).
+5. Since there is no live application, use logical selectors (like \`page.getByRole('button', { name: 'Submit' })\` or custom placeholders like \`page.locator('#submit-btn')\`) and document them with comments.
+6. Provide helpful comments corresponding to the test case steps.
+7. Include mock data or parameters in the test files based on the 'testData' field.
+8. CRITICAL REQUIREMENT: You MUST generate the complete, fully implemented Playwright TypeScript code for EACH and EVERY test case in the list. Do not use draft structures, mock structures, or skip any test cases. Provide complete spec files for all test cases in this batch.
 
 Output ONLY the raw JSON object. Start with { and end with }`
 }
@@ -811,9 +855,51 @@ class AIService {
     jiraIssue: any,
     testCases: TestCase[]
   ): Promise<PlaywrightAutomationData> {
-    const prompt = buildAutomatePrompt(jiraIssue, testCases)
-    const raw = await this.callAI(provider, apiKey, model, prompt, 150000)
-    return this.parseAutomationJSON(raw)
+    if (testCases.length === 0) {
+      return {
+        readme: '# Playwright Test Suite\nNo test cases provided.',
+        packageJson: '{}',
+        tsconfigJson: '{}',
+        playwrightConfig: '',
+        testFiles: []
+      }
+    }
+
+    const chunkSize = 5
+    const chunks: TestCase[][] = []
+    for (let i = 0; i < testCases.length; i += chunkSize) {
+      chunks.push(testCases.slice(i, i + chunkSize))
+    }
+
+    // Generate first batch with the full template configuration
+    const firstChunk = chunks[0]
+    const firstPrompt = buildAutomatePrompt(jiraIssue, firstChunk)
+    const firstRaw = await this.callAI(provider, apiKey, model, firstPrompt, 150000)
+    const result = this.parseAutomationJSON(firstRaw)
+
+    // Generate subsequent batches in sequence (safer for rate limits than parallel)
+    for (let c = 1; c < chunks.length; c++) {
+      const chunk = chunks[c]
+      const chunkPrompt = buildAutomateChunkPrompt(jiraIssue, chunk)
+      try {
+        const chunkRaw = await this.callAI(provider, apiKey, model, chunkPrompt, 150000)
+        const chunkData = this.parseAutomationJSON(chunkRaw)
+        if (chunkData.testFiles && chunkData.testFiles.length > 0) {
+          result.testFiles.push(...chunkData.testFiles)
+        }
+      } catch (err) {
+        console.error(`Failed to automate chunk ${c + 1}:`, err)
+        // Fallback: create mock/draft specs if a chunk call fails, so we don't fail the whole process
+        chunk.forEach(tc => {
+          result.testFiles.push({
+            filename: `tests/${tc.id}.spec.ts`,
+            code: `import { test, expect } from '@playwright/test';\n\n// TODO: Failed to generate automation for ${tc.id} automatically.\n// Summary: ${tc.summary}\n// Precondition: ${tc.precondition}\n\ntest('${tc.id} - ${tc.summary.replace(/'/g, "\\'")}', async ({ page }) => {\n  // Manual automation needed\n});`
+          })
+        })
+      }
+    }
+
+    return result
   }
 
   private parseAutomationJSON(raw: string): PlaywrightAutomationData {
