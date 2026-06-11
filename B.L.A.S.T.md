@@ -80,20 +80,25 @@ The BLAST framework extends its output standard for QA documentation with the **
 | **O** | Operations | Team roles, schedule, resource plan, risk register, communication plan |
 | **T** | Traceability | Requirement ↔ test case mapping matrix, coverage metrics, defect linkage |
 
-### Output Standards (v3.0)
+### Output Standards (v4.0)
 
-BLAST QA generators produce three distinct artifact types:
+BLAST QA generators produce four distinct artifact types:
 
 1. **Test Strategy** — Risk-based 10-section QA approach document. Export: Markdown, JSON.
 2. **Test Plan** — Full RICE-POT IEEE 829 document with all 7 dimensions. Export: PDF, DOCX, Markdown.
-3. **Test Cases** — Jira/Zephyr Scale–compatible detailed cases with 4-8 atomic steps per case, covering: Happy Path, Negative, Boundary, Edge Cases, UI/UX, Security, and Performance scenarios. Export: CSV (Jira bulk import).
+3. **Test Cases** — Jira/Zephyr Scale–compatible detailed cases, dynamically sized based on ticket complexity (12-15 for simple, 15-20 for complex).
+   - **Incremental Expansion**: Ability to think and append 10-15 additional cases sequentially (TC-019+) without duplicating existing ones.
+   - **Export**: CSV (Jira bulk import).
+4. **Playwright TS Automation** — Fully structured Playwright automation project in TypeScript.
+   - **Structure**: Includes `package.json`, `tsconfig.json`, `playwright.config.ts`, `README.md`, and individual `.spec.ts` files under `tests/` for each automated case.
+   - **Export**: Markdown summary, ZIP bundle containing the ready-to-use directory structure.
 
 ### Test Case Quality Standards
 
 Each AI-generated test case MUST:
 - Have a unique ID (TC-001, TC-002, …)
 - Include a precise precondition statement
-- Contain 4-8 atomic action steps (one action per step)
+- Contain 4-8 atomic action steps (one action per step, detailing minor actions and inputs)
 - Specify exact test data for each step
 - Include a measurable expected result per step
 - Be classified by scenario type and priority
@@ -101,7 +106,9 @@ Each AI-generated test case MUST:
 
 ### Behavioral Rules for QA Generation
 
-- **Specificity**: Reference exact field names, button labels, and values from the source ticket
-- **Adversarial Thinking**: Always think like someone trying to break the system
-- **Coverage Distribution**: Minimum 25% Happy Path, 20% Negative, 15% Boundary, 15% Edge, 10% UI/UX, 10% Security, 5% Performance
-- **No Generic Cases**: Each case must be specific to the feature — no copy-paste filler
+- **Specificity**: Reference exact field names, button labels, and values from the source ticket.
+- **Atomic Actions**: Explicitly write out minor inputs and navigation steps (e.g. click field, type value, press enter) instead of high-level descriptions.
+- **Adversarial Thinking**: Always think like someone trying to break the system.
+- **Coverage Distribution**: Minimum 25% Happy Path, 20% Negative, 15% Boundary, 15% Edge, 10% UI/UX, 10% Security, 5% Performance.
+- **No Generic Cases**: Each case must be specific to the feature — no copy-paste filler.
+

@@ -1,11 +1,16 @@
 import { useState, useMemo } from 'react'
-import { exportTestCasesAsCSV } from '../services/exportService'
-import type { TestCase } from '../services/aiService'
+import { exportTestCasesAsCSV, exportPlaywrightAsMD, exportPlaywrightAsZip } from '../services/exportService'
+import type { TestCase, PlaywrightAutomationData } from '../services/aiService'
 
 interface TestCasesDisplayProps {
   testCases: TestCase[]
   jiraId: string
   provider: string
+  onAddMoreCases: () => Promise<void>
+  isAddingCases: boolean
+  onAutomateCases: () => Promise<void>
+  isAutomating: boolean
+  playwrightData: PlaywrightAutomationData | null
 }
 
 const PRIORITY_CONFIG: Record<string, { color: string; bg: string; dot: string }> = {
@@ -40,11 +45,22 @@ const providerLabels: Record<string, string> = {
   groq: '⚡ Groq', openrouter: '🔀 OpenRouter', gemini: '💎 Gemini', openai: '🤖 OpenAI'
 }
 
-export default function TestCasesDisplay({ testCases, jiraId, provider }: TestCasesDisplayProps) {
+export default function TestCasesDisplay({
+  testCases,
+  jiraId,
+  provider,
+  onAddMoreCases,
+  isAddingCases,
+  onAutomateCases,
+  isAutomating,
+  playwrightData
+}: TestCasesDisplayProps) {
   const [filter, setFilter] = useState<string>('all')
   const [search, setSearch] = useState('')
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [sortBy, setSortBy] = useState<'id' | 'priority' | 'type'>('id')
+  const [activePwTab, setActivePwTab] = useState<string>('readme')
+  const [copiedCode, setCopiedCode] = useState(false)
 
   const priorityOrder: Record<string, number> = { Critical: 0, High: 1, Medium: 2, Low: 3 }
 
@@ -72,6 +88,26 @@ export default function TestCasesDisplay({ testCases, jiraId, provider }: TestCa
   }, [testCases])
 
   const totalSteps = useMemo(() => testCases.reduce((s, tc) => s + (tc.steps?.length || 0), 0), [testCases])
+
+  const getCodeToDisplay = () => {
+    if (!playwrightData) return ''
+    if (activePwTab === 'readme') return playwrightData.readme
+    if (activePwTab === 'package.json') return playwrightData.packageJson
+    if (activePwTab === 'tsconfig.json') return playwrightData.tsconfigJson
+    if (activePwTab === 'playwright.config.ts') return playwrightData.playwrightConfig
+    const file = playwrightData.testFiles.find(f => f.filename === activePwTab)
+    return file ? file.code : ''
+  }
+
+  const handleCopyCode = async () => {
+    const code = getCodeToDisplay()
+    if (!code) return
+    const ok = await navigator.clipboard.writeText(code).then(() => true).catch(() => false)
+    if (ok) {
+      setCopiedCode(true)
+      setTimeout(() => setCopiedCode(false), 2000)
+    }
+  }
 
   return (
     <div className="animate-in">
@@ -161,9 +197,8 @@ export default function TestCasesDisplay({ testCases, jiraId, provider }: TestCa
               const isExpanded = expandedId === tc.id
 
               return (
-                <>
+                <optgroup key={tc.id} style={{ border: 'none' }}>
                   <tr
-                    key={tc.id}
                     className={`tc-row ${idx % 2 === 0 ? 'tc-row-even' : ''} ${isExpanded ? 'tc-row-expanded' : ''}`}
                     onClick={() => setExpandedId(isExpanded ? null : tc.id)}
                     style={{ cursor: 'pointer' }}
@@ -198,7 +233,7 @@ export default function TestCasesDisplay({ testCases, jiraId, provider }: TestCa
                   </tr>
 
                   {isExpanded && (
-                    <tr key={`${tc.id}-expanded`} className="tc-detail-row">
+                    <tr className="tc-detail-row">
                       <td colSpan={8}>
                         <div className="tc-detail">
                           {tc.precondition && (
@@ -249,7 +284,7 @@ export default function TestCasesDisplay({ testCases, jiraId, provider }: TestCa
                       </td>
                     </tr>
                   )}
-                </>
+                </optgroup>
               )
             })}
           </tbody>
@@ -267,8 +302,121 @@ export default function TestCasesDisplay({ testCases, jiraId, provider }: TestCa
         Showing {filtered.length} of {testCases.length} test cases
       </div>
 
+      {/* QA Actions and Automation Panel */}
+      <div className="qa-actions-panel" style={{ marginTop: 24, padding: 16, borderRadius: 8, background: 'rgba(30, 41, 59, 0.4)', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+          <div style={{ textAlign: 'left' }}>
+            <h3 style={{ margin: 0, fontSize: 14, fontWeight: 'bold', color: 'var(--text-primary)' }}>🛠️ QA Actions & Expansion</h3>
+            <p style={{ margin: '2px 0 0 0', fontSize: 12, color: 'var(--text-muted)' }}>Expand test coverage dynamically or generate automated Playwright tests</p>
+          </div>
+          <div style={{ display: 'flex', gap: 12 }}>
+            <button
+              className="btn-export btn-export-purple"
+              onClick={onAddMoreCases}
+              disabled={isAddingCases || isAutomating}
+              style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+            >
+              {isAddingCases ? (
+                <>
+                  <span className="loading-ring-small" /> Adding Cases...
+                </>
+              ) : (
+                <>➕ Add More Test Cases</>
+              )}
+            </button>
+            <button
+              className="btn-export btn-export-green"
+              onClick={onAutomateCases}
+              disabled={isAutomating || isAddingCases}
+              style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+            >
+              {isAutomating ? (
+                <>
+                  <span className="loading-ring-small" /> Automating...
+                </>
+              ) : (
+                <>🤖 Automate Test Cases</>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Playwright Automation Section */}
+      {playwrightData && (
+        <div className="playwright-automation-card animate-in" style={{ marginTop: 24, padding: 16, borderRadius: 8, background: 'rgba(15, 23, 42, 0.4)', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+          <div className="playwright-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: 12, marginBottom: 12 }}>
+            <div style={{ textAlign: 'left' }}>
+              <h3 style={{ margin: 0, fontSize: 15, fontWeight: 'bold', color: '#10b981' }}>🎭 Playwright TypeScript Automation Framework</h3>
+              <p style={{ margin: '2px 0 0 0', fontSize: 12, color: 'var(--text-muted)' }}>Configure, extract, and import directly to VS Code or any IDE</p>
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                className="btn-export btn-export-cyan"
+                onClick={() => exportPlaywrightAsMD(playwrightData, jiraId)}
+                style={{ padding: '6px 12px', fontSize: 12 }}
+              >
+                📝 Download MD File
+              </button>
+              <button
+                className="btn-export btn-export-green"
+                onClick={() => exportPlaywrightAsZip(playwrightData, jiraId)}
+                style={{ padding: '6px 12px', fontSize: 12 }}
+              >
+                📦 Download Project (.zip)
+              </button>
+            </div>
+          </div>
+
+          <div className="playwright-preview-tabs" style={{ display: 'flex', gap: 6, overflowX: 'auto', marginBottom: 12, paddingBottom: 6 }}>
+            <button
+              className={`pw-tab-btn ${activePwTab === 'readme' ? 'active' : ''}`}
+              onClick={() => setActivePwTab('readme')}
+            >
+              📄 README.md
+            </button>
+            <button
+              className={`pw-tab-btn ${activePwTab === 'package.json' ? 'active' : ''}`}
+              onClick={() => setActivePwTab('package.json')}
+            >
+              📦 package.json
+            </button>
+            <button
+              className={`pw-tab-btn ${activePwTab === 'playwright.config.ts' ? 'active' : ''}`}
+              onClick={() => setActivePwTab('playwright.config.ts')}
+            >
+              ⚙️ playwright.config.ts
+            </button>
+            {playwrightData.testFiles.map(file => {
+              const fname = file.filename.split('/').pop() || file.filename
+              return (
+                <button
+                  key={file.filename}
+                  className={`pw-tab-btn ${activePwTab === file.filename ? 'active' : ''}`}
+                  onClick={() => setActivePwTab(file.filename)}
+                >
+                  🧪 {fname}
+                </button>
+              )
+            })}
+          </div>
+
+          <div className="playwright-code-preview" style={{ background: '#090d16', borderRadius: 6, border: '1px solid rgba(255,255,255,0.06)', padding: 16, position: 'relative' }}>
+            <button
+              onClick={handleCopyCode}
+              style={{ position: 'absolute', top: 8, right: 8, padding: '4px 8px', fontSize: 11, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-secondary)', borderRadius: 4, cursor: 'pointer' }}
+            >
+              {copiedCode ? '✅ Copied!' : '📋 Copy Code'}
+            </button>
+            <pre style={{ margin: 0, maxHeight: 400, overflowY: 'auto', fontSize: 13, fontFamily: 'monospace', color: '#e2e8f0', textAlign: 'left', whiteSpace: 'pre-wrap' }}>
+              <code>{getCodeToDisplay()}</code>
+            </pre>
+          </div>
+        </div>
+      )}
+
       {/* Export Bar */}
-      <div className="export-bar" style={{ marginTop: 16 }}>
+      <div className="export-bar" style={{ marginTop: 24 }}>
         <button
           className="btn-export btn-export-cyan"
           onClick={() => exportTestCasesAsCSV(testCases, jiraId)}

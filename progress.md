@@ -106,3 +106,26 @@
 | `B.L.A.S.T.md` | RICE-POT methodology documentation |
 | `findings.md` | v3.0 feature list update |
 | `package.json` | New deps: jspdf, jspdf-autotable, docx |
+
+## v4.0 – Playwright Test Automation + Dynamic Test Cases ✅
+
+### New Features Implemented
+- ✅ **Dynamic Test Case Counts** — ticket complexity determines initial test case counts (12-20) instead of a hardcoded 15
+- ✅ **Incremental Test Case Expansion** — "Add More Test Cases" button generates 10-15 additional test cases (starting at next TC number, e.g. TC-019) and merges them into the table
+- ✅ **Playwright + TypeScript Automation** — "Automate Test Cases" button generates a full Playwright automation framework with specs for each testcase
+- ✅ **Interactive Framework Explorer** — View generated configs (`package.json`, `playwright.config.ts`, `tsconfig.json`) and test specs in a tabbed UI code preview
+- ✅ **Automation Exports** — Download Playwright tests as a detailed markdown file or a ready-to-run ZIP bundle containing the framework folder structure
+- ✅ **New package** — `jszip`
+
+### Files Modified
+| File | Change |
+|------|--------|
+| `src/services/aiService.ts` | Dynamic test cases count prompt, more test cases prompt, playwright TS automation prompt + parser |
+| `src/services/exportService.ts` | exportPlaywrightAsMD and exportPlaywrightAsZip using JSZip |
+| `src/components/TestStrategyPage.tsx` | Store JIRA issue, add states for incremental generation & automation, pass down to view |
+| `src/components/TestCasesDisplay.tsx` | Add actions panel (buttons for incremental generation & automation), tabbed code viewer, downloads |
+| `src/styles/globals.css` | Playwright framework styles, green export button style, small loading spinner CSS |
+| `B.L.A.S.T.md` | Added Playwright automation outputs and dynamic counts to standard |
+| `findings.md` | v4.0 features list update |
+| `package.json` | New deps: jszip, @types/jszip |
+

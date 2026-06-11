@@ -27,6 +27,11 @@ export default function TestStrategyPage() {
   const [strategy, setStrategy] = useState<string | null>(null)
   const [testPlan, setTestPlan] = useState<string | null>(null)
   const [testCases, setTestCases] = useState<TestCase[] | null>(null)
+  const [jiraIssue, setJiraIssue] = useState<any | null>(null)
+  const [isAddingCases, setIsAddingCases] = useState(false)
+  const [isAutomating, setIsAutomating] = useState(false)
+  const [playwrightData, setPlaywrightData] = useState<any | null>(null)
+
 
   // View tab for generated results (independent of mode)
   const [viewTab, setViewTab] = useState<GenerationMode>('strategy')
@@ -74,29 +79,66 @@ export default function TestStrategyPage() {
       }
 
       jiraService.initialize(settings.jira.email, settings.jira.token, settings.jira.baseUrl)
-      const jiraIssue = await jiraService.fetchIssue(jiraId)
+      const fetchedIssue = await jiraService.fetchIssue(jiraId)
+      setJiraIssue(fetchedIssue)
+      setPlaywrightData(null) // reset playwright data on new ticket / regeneration
+
       const prov = settings.ai.provider
       const model = getModel()
-
+ 
       if (mode === 'strategy') {
-        const result = await aiService.generateTestStrategy(prov, apiKey, model, jiraIssue)
+        const result = await aiService.generateTestStrategy(prov, apiKey, model, fetchedIssue)
         setStrategy(result)
         setViewTab('strategy')
       } else if (mode === 'plan') {
-        const result = await aiService.generateTestPlan(prov, apiKey, model, jiraIssue)
+        const result = await aiService.generateTestPlan(prov, apiKey, model, fetchedIssue)
         setTestPlan(result)
         setViewTab('plan')
       } else if (mode === 'cases') {
-        const result = await aiService.generateTestCases(prov, apiKey, model, jiraIssue)
+        const result = await aiService.generateTestCases(prov, apiKey, model, fetchedIssue)
         setTestCases(result)
         setViewTab('cases')
       }
-
+ 
       setProviderUsed(prov)
     } catch (err: any) {
       setError(err.message || 'Generation failed. Please try again.')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const addMoreTestCases = async () => {
+    if (!jiraIssue || !testCases) return
+    setIsAddingCases(true)
+    setError(null)
+    try {
+      const apiKey = getApiKey()
+      const prov = settings.ai.provider
+      const model = getModel()
+      const newCases = await aiService.generateMoreTestCases(prov, apiKey, model, jiraIssue, testCases)
+      setTestCases([...testCases, ...newCases])
+    } catch (err: any) {
+      setError(err.message || 'Failed to generate more test cases. Please try again.')
+    } finally {
+      setIsAddingCases(false)
+    }
+  }
+
+  const automateTestCases = async () => {
+    if (!jiraIssue || !testCases) return
+    setIsAutomating(true)
+    setError(null)
+    try {
+      const apiKey = getApiKey()
+      const prov = settings.ai.provider
+      const model = getModel()
+      const data = await aiService.generatePlaywrightTests(prov, apiKey, model, jiraIssue, testCases)
+      setPlaywrightData(data)
+    } catch (err: any) {
+      setError(err.message || 'Failed to automate test cases. Please try again.')
+    } finally {
+      setIsAutomating(false)
     }
   }
 
@@ -210,7 +252,16 @@ export default function TestStrategyPage() {
 
           {/* Test Cases View */}
           {viewTab === 'cases' && testCases && (
-            <TestCasesDisplay testCases={testCases} jiraId={currentJiraId} provider={providerUsed} />
+            <TestCasesDisplay
+              testCases={testCases}
+              jiraId={currentJiraId}
+              provider={providerUsed}
+              onAddMoreCases={addMoreTestCases}
+              isAddingCases={isAddingCases}
+              onAutomateCases={automateTestCases}
+              isAutomating={isAutomating}
+              playwrightData={playwrightData}
+            />
           )}
         </>
       )}

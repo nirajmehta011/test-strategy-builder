@@ -40,34 +40,38 @@
 | **Gemini** | generativelanguage.googleapis.com | ✅ Yes | `AIza...` |
 | **OpenAI** | api.openai.com | ❌ Paid | `sk-...` |
 
-## Core Features (v3.0)
-1. **Persistent Left-Pane Settings** — always visible, collapsible sections
-2. **Multi-provider AI** — Groq, OpenRouter, Gemini, OpenAI switchable via provider pills
-3. **Live Model Loading** — fetches real model lists from each provider on test
-4. **Default Model Lists** — works offline (falls back to curated model lists)
-5. **Jira Connection Testing** — validate credentials before generation
-6. **AI Connection Testing** — verify API key + fetch live models
-7. **Jira Issue Fetch** — auto-pull summary, description, priority, status
-8. **🆕 3-Mode Generator** — selectable via mode button pills (Strategy / Test Plan / Test Cases)
-9. **🆕 Test Strategy Generation** — 10-section risk-based QA strategy in markdown
-10. **🆕 Test Plan Generation (RICE-POT)** — Full IEEE 829 document: Requirements, Interfaces, Components, Environment, Procedures, Operations, Traceability
-11. **🆕 Test Case Generation** — 25+ Jira/Zephyr–format cases with 4-8 granular atomic steps each, covering all scenario types
-12. **🆕 PDF Export** — Styled RICE-POT test plan with title page, colored section headers, company branding
-13. **🆕 DOCX Export** — Word-compatible test plan document via docx package
-14. **🆕 CSV Export (Jira Import)** — Test cases as Jira-bulk-importable CSV with all required field columns
-15. **🆕 Test Cases Table** — Filterable by scenario type (Happy Path / Negative / Edge / Boundary / UI-UX / Security), searchable, sortable
-16. **🆕 Expandable Test Case Rows** — Click any case to reveal all granular steps inline
-17. **🆕 Statistics Dashboard** — Case count, step count, per-type breakdown at a glance
-18. **🆕 Output Tabs** — All 3 generation outputs persist independently; switch between them via tabs
-19. **Export Options** — Copy, Markdown, JSON (strategy); PDF, DOCX, Markdown (plan); CSV x2 (cases)
-20. **Dark Mode** — default dark, persisted to localStorage
+## Core Features (v4.0)
+1. **Persistent Left-Pane Settings** — always visible, collapsible sections.
+2. **Multi-provider AI** — Groq, OpenRouter, Gemini, OpenAI switchable via provider pills.
+3. **Live Model Loading** — fetches real model lists from each provider on test.
+4. **Default Model Lists** — works offline (falls back to curated model lists).
+5. **Jira Connection Testing** — validate credentials before generation.
+6. **AI Connection Testing** — verify API key + fetch live models.
+7. **Jira Issue Fetch** — auto-pull summary, description, priority, status.
+8. **3-Mode Generator** — selectable via mode button pills (Strategy / Test Plan / Test Cases).
+9. **Test Strategy Generation** — 10-section risk-based QA strategy in markdown.
+10. **Test Plan Generation (RICE-POT)** — Full IEEE 829 document with all 7 dimensions.
+11. **Dynamic Test Case Counts** — ticket complexity determines initial test case counts (12-20) instead of a hardcoded 15.
+12. **Incremental Test Case Expansion** — "Add More Test Cases" button generates 10-15 additional test cases (starting at next TC number, e.g. TC-019) and merges them into the table.
+13. **Playwright + TypeScript Automation** — "Automate Test Cases" button generates a full Playwright automation framework with specs for each test case.
+14. **Interactive Framework Explorer** — View generated configs (`package.json`, `playwright.config.ts`, `tsconfig.json`) and test specs in a tabbed UI code preview.
+15. **Automation Exports** — Download Playwright tests as a detailed markdown file or a ready-to-run ZIP bundle.
+16. **PDF & DOCX Export** — Styled RICE-POT test plan with title page, colored section headers.
+17. **CSV Export (Jira Import)** — Test cases as Jira-bulk-importable CSV with all required columns.
+18. **Test Cases Table** — Filterable by scenario type, searchable, sortable.
+19. **Expandable Test Case Rows** — Click any case to reveal all granular steps inline.
+20. **Statistics Dashboard** — Case count, step count, per-type breakdown at a glance.
+21. **Output Tabs** — All 3 generation outputs persist independently; switch between them via tabs.
+22. **Dark Mode** — default dark, persisted to localStorage.
 
-## New Dependencies (v3.0)
+## New Dependencies (v4.0)
 | Package | Version | Purpose |
 |---------|---------|---------|
 | `jspdf` | ^2.x | Client-side PDF generation |
 | `jspdf-autotable` | ^3.x | Table support in PDF |
-| `docx` | ^8.x | Word DOCX generation |
+| `docx` | ^9.x | Word DOCX generation |
+| `jszip` | ^3.x | Client-side ZIP file generation |
+
 
 ## Bug Fixes (v2.0)
 - **Jira API URL Fix:** Backend was calling `/rest/api/3/issues/` → corrected to `/rest/api/3/issue/` (Jira Cloud REST API v3)

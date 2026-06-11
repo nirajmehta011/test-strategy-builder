@@ -1023,6 +1023,54 @@ body {
 }
 .btn-export:disabled { opacity: 0.5; cursor: not-allowed; }
 
+.btn-export-green {
+  border-color: rgba(16,185,129,0.3) !important;
+  color: #10b981 !important;
+}
+.btn-export-green:hover {
+  border-color: #10b981 !important;
+  background: rgba(16,185,129,0.1) !important;
+}
+
+/* Playwright Automation Styles */
+.pw-tab-btn {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: var(--text-secondary);
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+.pw-tab-btn:hover {
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+}
+.pw-tab-btn.active {
+  background: rgba(16,185,129,0.15);
+  border-color: #10b981;
+  color: #10b981;
+  box-shadow: 0 0 10px rgba(16,185,129,0.15);
+}
+
+.loading-ring-small {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+
 /* ─── RICE-POT Banner ────────────────────────────────────────────────────── */
 .rice-pot-banner {
   background: linear-gradient(135deg, rgba(19,22,36,0.95), rgba(25,28,48,0.95));

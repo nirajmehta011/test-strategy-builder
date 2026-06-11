@@ -1,6 +1,8 @@
 import { jsPDF } from 'jspdf'
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, ShadingType } from 'docx'
-import type { TestCase } from './aiService'
+import JSZip from 'jszip'
+import type { TestCase, PlaywrightAutomationData } from './aiService'
+
 
 // ─── Markdown to Plain Text ───────────────────────────────────────────────────
 function mdToPlain(md: string): string {
@@ -407,5 +409,52 @@ export function exportTestCasesAsCSV(testCases: TestCase[], jiraId: string) {
   const el = document.createElement('a')
   el.href = URL.createObjectURL(blob)
   el.download = `test-cases-${jiraId}-jira-import.csv`
+  document.body.appendChild(el); el.click(); document.body.removeChild(el)
+}
+
+// ─── Export Playwright Automation Suite as Markdown ───────────────────────────
+export function exportPlaywrightAsMD(data: PlaywrightAutomationData, jiraId: string) {
+  let markdown = `# Playwright Test Automation Suite for ${jiraId}\n\n`
+  
+  markdown += `## README.md\n\`\`\`markdown\n${data.readme}\n\`\`\`\n\n`
+  markdown += `## package.json\n\`\`\`json\n${data.packageJson}\n\`\`\`\n\n`
+  markdown += `## tsconfig.json\n\`\`\`json\n${data.tsconfigJson}\n\`\`\`\n\n`
+  markdown += `## playwright.config.ts\n\`\`\`typescript\n${data.playwrightConfig}\n\`\`\`\n\n`
+  
+  markdown += `## Test Cases Code\n\n`
+  data.testFiles.forEach(file => {
+    markdown += `### File: \`${file.filename}\`\n\`\`\`typescript\n${file.code}\n\`\`\`\n\n`
+  })
+
+  const el = document.createElement('a')
+  el.href = URL.createObjectURL(new Blob([markdown], { type: 'text/markdown' }))
+  el.download = `playwright-automation-${jiraId}.md`
+  document.body.appendChild(el); el.click(); document.body.removeChild(el)
+}
+
+// ─── Export Playwright Automation Suite as ZIP ─────────────────────────────────
+export async function exportPlaywrightAsZip(data: PlaywrightAutomationData, jiraId: string) {
+  const zip = new JSZip()
+
+  // Base folder name
+  const folderName = `playwright-automation-${jiraId}`
+  const folder = zip.folder(folderName)
+  if (!folder) throw new Error('Failed to create ZIP folder')
+
+  folder.file('README.md', data.readme)
+  folder.file('package.json', data.packageJson)
+  folder.file('tsconfig.json', data.tsconfigJson)
+  folder.file('playwright.config.ts', data.playwrightConfig)
+
+  // Test files
+  data.testFiles.forEach(file => {
+    // If the filename contains directories, JSZip folder.file() handles relative paths automatically
+    folder.file(file.filename, file.code)
+  })
+
+  const content = await zip.generateAsync({ type: 'blob' })
+  const el = document.createElement('a')
+  el.href = URL.createObjectURL(content)
+  el.download = `${folderName}.zip`
   document.body.appendChild(el); el.click(); document.body.removeChild(el)
 }
