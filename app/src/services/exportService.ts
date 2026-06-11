@@ -458,3 +458,130 @@ export async function exportPlaywrightAsZip(data: PlaywrightAutomationData, jira
   el.download = `${folderName}.zip`
   document.body.appendChild(el); el.click(); document.body.removeChild(el)
 }
+
+// ─── Parse CSV back to TestCases ───────────────────────────────────────────────
+export function parseCSVToTestCases(csvText: string): TestCase[] {
+  const lines: string[] = []
+  let currentLine = ''
+  let inQuotes = false
+
+  // Split lines while respecting newlines inside quotes
+  for (let i = 0; i < csvText.length; i++) {
+    const char = csvText[i]
+    if (char === '"') {
+      inQuotes = !inQuotes
+      currentLine += char
+    } else if (char === '\n' && !inQuotes) {
+      lines.push(currentLine)
+      currentLine = ''
+    } else {
+      currentLine += char
+    }
+  }
+  if (currentLine) lines.push(currentLine)
+
+  if (lines.length <= 1) return []
+
+  // Parse CSV row respecting quoted strings
+  const parseCSVRow = (rowText: string): string[] => {
+    const cells: string[] = []
+    let currentCell = ''
+    let inside = false
+    for (let i = 0; i < rowText.length; i++) {
+      const char = rowText[i]
+      if (char === '"') {
+        if (inside && rowText[i + 1] === '"') {
+          currentCell += '"'
+          i++ // skip next quote
+        } else {
+          inside = !inside
+        }
+      } else if (char === ',' && !inside) {
+        cells.push(currentCell.trim())
+        currentCell = ''
+      } else {
+        currentCell += char
+      }
+    }
+    cells.push(currentCell.trim())
+    return cells
+  }
+
+  const headers = parseCSVRow(lines[0])
+  const getColIndex = (names: string[]): number => {
+    return headers.findIndex(h => names.some(n => h.toLowerCase() === n.trim().toLowerCase()))
+  }
+
+  const colSummary = getColIndex(['summary'])
+  const colIssueType = getColIndex(['issue type', 'issue_type', 'type'])
+  const colPriority = getColIndex(['priority'])
+  const colLabels = getColIndex(['labels'])
+  const colTestType = getColIndex(['test type', 'test_type'])
+  const colScenarioType = getColIndex(['scenario type', 'scenario_type'])
+  const colComponent = getColIndex(['component'])
+  const colEstTime = getColIndex(['estimated time', 'estimated_time', 'time'])
+  const colPrecondition = getColIndex(['precondition'])
+  const colStepNum = getColIndex(['step #', 'step_number', 'step'])
+  const colStepAction = getColIndex(['step action', 'step_action', 'action'])
+  const colStepData = getColIndex(['step data', 'step_data', 'data'])
+  const colStepExpected = getColIndex(['step expected result', 'step_expected_result', 'expected', 'expected result'])
+  const colStatus = getColIndex(['status'])
+
+  const testCases: TestCase[] = []
+  let currentTC: TestCase | null = null
+  let idCounter = 1
+
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i].trim()
+    if (!line) continue
+
+    const cells = parseCSVRow(lines[i])
+    if (cells.length === 0) continue
+
+    // The summary is only populated on the first row of a test case
+    const summary = colSummary !== -1 && cells[colSummary] ? cells[colSummary] : ''
+
+    if (summary) {
+      // Create new TestCase
+      currentTC = {
+        id: `TC-${String(idCounter++).padStart(3, '0')}`,
+        summary,
+        issueType: colIssueType !== -1 ? cells[colIssueType] : 'Test',
+        priority: colPriority !== -1 ? cells[colPriority] : 'Medium',
+        labels: colLabels !== -1 ? cells[colLabels] : '',
+        testType: colTestType !== -1 ? cells[colTestType] : 'Functional',
+        scenarioType: (colScenarioType !== -1 && cells[colScenarioType] ? cells[colScenarioType] : 'happy_path') as any,
+        component: colComponent !== -1 ? cells[colComponent] : '',
+        estimatedTime: colEstTime !== -1 ? cells[colEstTime] : '15m',
+        precondition: colPrecondition !== -1 ? cells[colPrecondition] : '',
+        steps: [],
+        status: colStatus !== -1 ? cells[colStatus] : 'Not Executed',
+      }
+      testCases.push(currentTC)
+    }
+
+    // Add steps to currentTestCase
+    if (currentTC) {
+      const action = colStepAction !== -1 ? cells[colStepAction] : ''
+      const expectedResult = colStepExpected !== -1 ? cells[colStepExpected] : ''
+      const testData = colStepData !== -1 ? cells[colStepData] : 'N/A'
+
+      if (action || expectedResult) {
+        let stepNum = currentTC.steps.length + 1
+        if (colStepNum !== -1 && cells[colStepNum]) {
+          const parsedNum = parseInt(cells[colStepNum], 10)
+          if (!isNaN(parsedNum)) stepNum = parsedNum
+        }
+        currentTC.steps.push({
+          stepNumber: stepNum,
+          action: action || 'Perform action',
+          testData: testData || 'N/A',
+          expectedResult: expectedResult || 'Action completed successfully'
+        })
+      }
+    }
+  }
+
+  return testCases
+}
+

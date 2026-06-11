@@ -43,6 +43,12 @@ export interface PlaywrightAutomationData {
   testFiles: PlaywrightAutomationFile[]
 }
 
+export interface MoreTestCasesResponse {
+  testCases: TestCase[]
+  noMoreCases: boolean
+}
+
+
 
 export const GROQ_DEFAULT_MODELS: AIModel[] = [
   { id: 'llama3-70b-8192', name: 'LLaMA 3 70B (8192)' },
@@ -373,8 +379,7 @@ Priority: ${jiraIssue.priority}
 
 Task:
 Dynamically determine the number of test cases to generate based on the complexity and depth of the Jira ticket details:
-- For simple tickets/features, generate between 12 to 15 cases.
-- For complex, multi-feature tickets, generate between 15 to 20 cases.
+- CRITICAL RULE: You MUST generate AT LEAST 10 to 15 distinct, detailed test cases. Do not generate only 1-2 cases. If the ticket description is brief, expand on secondary checkpaths, validation requirements, responsiveness, accessibility, security, and edge scenarios to ensure at least 10 high-quality cases are returned.
 Ensure all cases are high-quality, non-redundant, and cover various scenario types:
 - happy_path (core workflows)
 - negative (invalid inputs, wrong states)
@@ -383,6 +388,7 @@ Ensure all cases are high-quality, non-redundant, and cover various scenario typ
 - ui_ux (visual, accessibility, error messages)
 - security (XSS, injection, auth bypass)
 - performance (response time, concurrent load)
+
 
 Each test case MUST follow this EXACT JSON schema. No deviations:
 [
@@ -433,7 +439,7 @@ const buildMoreTestCasesPrompt = (jiraIssue: any, existingCases: TestCase[], sta
   const existingSummaryList = existingCases.map(tc => `${tc.id}: ${tc.summary}`).join('\n')
   const nextIdStr = `TC-${String(startIdIndex).padStart(3, '0')}`
 
-  return `You are a senior QA engineer. Output ONLY a raw JSON array — no markdown, no explanation, no code fences, no text before or after the array.
+  return `You are a senior QA engineer. Output ONLY a raw JSON array or a specific JSON object — no markdown, no explanation, no code fences, no text before or after.
 
 Jira Issue: ${jiraIssue.key}
 Summary: ${jiraIssue.summary}
@@ -444,11 +450,14 @@ Here are the ${existingCases.length} test cases already generated for this ticke
 ${existingSummaryList}
 
 Task:
-Generate an additional 10 to 15 new, detailed test cases that do NOT duplicate the existing ones. These new cases should cover other details, edge cases, negative flows, boundary values, security, or performance scenarios that are not already covered by the list above.
+Analyze the Jira ticket description. Are there any other scenarios, edge cases, negative flows, boundary values, security, or performance scenarios that are not already covered?
+- If all possible scenarios are already fully covered by the list above and no further tests make sense, output EXACTLY the following JSON object:
+{"noMoreCases": true}
+- Otherwise, generate an additional 5 to 10 new, detailed, high-quality test cases that do NOT duplicate the existing ones. Do not generate only 1-2 cases.
 
 Start the new test case IDs from ${nextIdStr} (e.g. if the next ID should be ${nextIdStr}, write "${nextIdStr}").
 
-Each test case MUST follow this EXACT JSON schema. No deviations:
+Each new test case MUST follow this EXACT JSON schema:
 [
   {
     "id": "${nextIdStr}",
@@ -475,10 +484,63 @@ Each test case MUST follow this EXACT JSON schema. No deviations:
 
 Rules:
 - Make sure to start the ID indexing precisely from ${nextIdStr} and increment sequentially (e.g. ${nextIdStr}, TC-${String(startIdIndex + 1).padStart(3, '0')}, etc.).
-- Be specific to THIS Jira issue — use field names, values, and flows from the description.
+- Be specific to THIS Jira issue.
 - Each step must be ONE atomic, minor action with expected results. Do not write generic or high-level steps; mention each minor action.
 - testData must be a concrete value or "N/A"
 - expectedResult must be measurable and specific
+- Output the complete JSON array or the noMoreCases JSON object only. Start your response with [ or { and end with ] or }`
+}
+
+// ─── Custom Scenario Test Case Prompt ──────────────────────────────────────────
+const buildCustomTestCasePrompt = (jiraIssue: any, existingCases: TestCase[], startIdIndex: number, customScenario: string) => {
+  const existingSummaryList = existingCases.map(tc => `${tc.id}: ${tc.summary}`).join('\n')
+  const nextIdStr = `TC-${String(startIdIndex).padStart(3, '0')}`
+
+  return `You are a senior QA engineer. Output ONLY a raw JSON array containing exactly one test case — no markdown, no explanation, no code fences, no text before or after the array.
+
+Jira Issue: ${jiraIssue.key}
+Summary: ${jiraIssue.summary}
+Description: ${jiraIssue.description}
+
+Here are the existing test cases already generated:
+${existingSummaryList}
+
+User Scenario to Test:
+"${customScenario}"
+
+Task:
+Generate exactly ONE highly detailed, complete test case for the User Scenario specified above. Ensure it does not duplicate any existing cases.
+
+Start the test case ID from ${nextIdStr}.
+
+Each test case MUST follow this EXACT JSON schema:
+[
+  {
+    "id": "${nextIdStr}",
+    "summary": "Verify [specific action] under [specific condition]",
+    "issueType": "Test",
+    "priority": "High",
+    "labels": "custom,functional",
+    "testType": "Functional",
+    "precondition": "User is logged in and on the [Page] page",
+    "scenarioType": "happy_path",
+    "component": "[Component name]",
+    "estimatedTime": "10m",
+    "steps": [
+      {
+        "stepNumber": 1,
+        "action": "Navigate to [exact page/URL]",
+        "testData": "N/A",
+        "expectedResult": "[Exact page] loads successfully with [elements] visible"
+      }
+    ],
+    "status": "Not Executed"
+  }
+]
+
+Rules:
+- Make sure to use the ID ${nextIdStr}.
+- Write extremely detailed, atomic steps and expected results specific to the user's custom scenario.
 - Output the complete JSON array only. Start your response with [ and end with ]`
 }
 
@@ -686,7 +748,7 @@ class AIService {
     model: string,
     jiraIssue: any,
     existingCases: TestCase[]
-  ): Promise<TestCase[]> {
+  ): Promise<MoreTestCasesResponse> {
     // Extract maximum number from IDs like "TC-015"
     let maxNum = 0
     existingCases.forEach(tc => {
@@ -700,7 +762,46 @@ class AIService {
 
     const prompt = buildMoreTestCasesPrompt(jiraIssue, existingCases, startIdIndex)
     const raw = await this.callAI(provider, apiKey, model, prompt, 120000)
-    return this.parseTestCasesJSON(raw)
+
+    // Check if the response indicates no more cases
+    if (raw.includes('noMoreCases') || raw.includes('"noMoreCases": true')) {
+      return { testCases: [], noMoreCases: true }
+    }
+
+    try {
+      const parsed = this.parseTestCasesJSON(raw)
+      return { testCases: parsed, noMoreCases: parsed.length === 0 }
+    } catch (err) {
+      if (raw.toLowerCase().includes('no more') || raw.toLowerCase().includes('fully covered')) {
+        return { testCases: [], noMoreCases: true }
+      }
+      throw err
+    }
+  }
+
+  async generateCustomTestCase(
+    provider: AIProvider,
+    apiKey: string,
+    model: string,
+    jiraIssue: any,
+    existingCases: TestCase[],
+    customScenario: string
+  ): Promise<TestCase> {
+    let maxNum = 0
+    existingCases.forEach(tc => {
+      const match = tc.id.match(/TC-(\d+)/)
+      if (match) {
+        const num = parseInt(match[1], 10)
+        if (num > maxNum) maxNum = num
+      }
+    })
+    const startIdIndex = maxNum + 1
+
+    const prompt = buildCustomTestCasePrompt(jiraIssue, existingCases, startIdIndex, customScenario)
+    const raw = await this.callAI(provider, apiKey, model, prompt, 90000)
+    const parsed = this.parseTestCasesJSON(raw)
+    if (parsed.length > 0) return parsed[0]
+    throw new Error('Could not parse the custom test case response from the AI.')
   }
 
   async generatePlaywrightTests(

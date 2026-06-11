@@ -80,16 +80,18 @@ The BLAST framework extends its output standard for QA documentation with the **
 | **O** | Operations | Team roles, schedule, resource plan, risk register, communication plan |
 | **T** | Traceability | Requirement ↔ test case mapping matrix, coverage metrics, defect linkage |
 
-### Output Standards (v4.0)
+### Output Standards (v4.1)
 
-BLAST QA generators produce four distinct artifact types:
+BLAST QA generators produce four distinct artifact types and support direct file-based workflows:
 
 1. **Test Strategy** — Risk-based 10-section QA approach document. Export: Markdown, JSON.
 2. **Test Plan** — Full RICE-POT IEEE 829 document with all 7 dimensions. Export: PDF, DOCX, Markdown.
-3. **Test Cases** — Jira/Zephyr Scale–compatible detailed cases, dynamically sized based on ticket complexity (12-15 for simple, 15-20 for complex).
-   - **Incremental Expansion**: Ability to think and append 10-15 additional cases sequentially (TC-019+) without duplicating existing ones.
+3. **Test Cases** — Jira/Zephyr Scale–compatible detailed cases, dynamically sized based on ticket complexity (enforcing at least 10-15 cases initially).
+   - **Incremental Expansion**: Ability to think and append 5-10 additional cases sequentially (TC-019+) without duplicating existing ones.
+   - **Custom Scenario Addition**: If all possible standard cases are covered, the user can describe specific workflows or boundary conditions to generate custom test cases dynamically.
    - **Export**: CSV (Jira bulk import).
 4. **Playwright TS Automation** — Fully structured Playwright automation project in TypeScript.
+   - **Direct CSV Upload**: Support uploading any Jira/Zephyr-compatible test cases CSV file directly to parse, load, and generate Playwright test cases immediately.
    - **Structure**: Includes `package.json`, `tsconfig.json`, `playwright.config.ts`, `README.md`, and individual `.spec.ts` files under `tests/` for each automated case.
    - **Export**: Markdown summary, ZIP bundle containing the ready-to-use directory structure.
 

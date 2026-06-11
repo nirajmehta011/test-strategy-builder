@@ -11,6 +11,9 @@ interface TestCasesDisplayProps {
   onAutomateCases: () => Promise<void>
   isAutomating: boolean
   playwrightData: PlaywrightAutomationData | null
+  onAddCustomCase: (customScenario: string) => Promise<void>
+  isAddingCustomCase: boolean
+  noMoreCases: boolean
 }
 
 const PRIORITY_CONFIG: Record<string, { color: string; bg: string; dot: string }> = {
@@ -53,7 +56,10 @@ export default function TestCasesDisplay({
   isAddingCases,
   onAutomateCases,
   isAutomating,
-  playwrightData
+  playwrightData,
+  onAddCustomCase,
+  isAddingCustomCase,
+  noMoreCases
 }: TestCasesDisplayProps) {
   const [filter, setFilter] = useState<string>('all')
   const [search, setSearch] = useState('')
@@ -61,6 +67,9 @@ export default function TestCasesDisplay({
   const [sortBy, setSortBy] = useState<'id' | 'priority' | 'type'>('id')
   const [activePwTab, setActivePwTab] = useState<string>('readme')
   const [copiedCode, setCopiedCode] = useState(false)
+  
+  // Custom Scenario Input State
+  const [customScenarioText, setCustomScenarioText] = useState('')
 
   const priorityOrder: Record<string, number> = { Critical: 0, High: 1, Medium: 2, Low: 3 }
 
@@ -107,6 +116,12 @@ export default function TestCasesDisplay({
       setCopiedCode(true)
       setTimeout(() => setCopiedCode(false), 2000)
     }
+  }
+
+  const handleGenerateCustomCase = async () => {
+    if (!customScenarioText.trim()) return
+    await onAddCustomCase(customScenarioText.trim())
+    setCustomScenarioText('')
   }
 
   return (
@@ -302,6 +317,44 @@ export default function TestCasesDisplay({
         Showing {filtered.length} of {testCases.length} test cases
       </div>
 
+      {/* No More Cases Warning & Custom Scenario Input */}
+      {noMoreCases && (
+        <div className="no-more-cases-alert animate-in" style={{ marginTop: 20, padding: 16, borderRadius: 8, background: 'rgba(234, 179, 8, 0.04)', border: '1px solid rgba(234, 179, 8, 0.18)', textAlign: 'left' }}>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 12 }}>
+            <span style={{ fontSize: 20 }}>✨</span>
+            <div>
+              <h4 style={{ margin: 0, fontSize: 13, fontWeight: 'bold', color: '#eab308' }}>All Standard Scenarios Covered</h4>
+              <p style={{ margin: '2px 0 0 0', fontSize: 11, color: 'var(--text-muted)' }}>The BLAST AI framework indicates all key ticket flows are covered. If you have a specific scenario you would like to test, describe it below to generate a new detailed case.</p>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <input
+              type="text"
+              className="tc-search"
+              placeholder="e.g., Verify validation when entering a maximum integer value..."
+              value={customScenarioText}
+              onChange={e => setCustomScenarioText(e.target.value)}
+              disabled={isAddingCustomCase}
+              style={{ flex: 1, height: 38 }}
+            />
+            <button
+              className="btn-export btn-export-cyan"
+              onClick={handleGenerateCustomCase}
+              disabled={isAddingCustomCase || !customScenarioText.trim()}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, height: 38 }}
+            >
+              {isAddingCustomCase ? (
+                <>
+                  <span className="loading-ring-small" /> Generating...
+                </>
+              ) : (
+                <>➕ Add Custom Case</>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* QA Actions and Automation Panel */}
       <div className="qa-actions-panel" style={{ marginTop: 24, padding: 16, borderRadius: 8, background: 'rgba(30, 41, 59, 0.4)', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
@@ -313,7 +366,7 @@ export default function TestCasesDisplay({
             <button
               className="btn-export btn-export-purple"
               onClick={onAddMoreCases}
-              disabled={isAddingCases || isAutomating}
+              disabled={isAddingCases || isAutomating || isAddingCustomCase}
               style={{ display: 'flex', alignItems: 'center', gap: 8 }}
             >
               {isAddingCases ? (
@@ -327,7 +380,7 @@ export default function TestCasesDisplay({
             <button
               className="btn-export btn-export-green"
               onClick={onAutomateCases}
-              disabled={isAutomating || isAddingCases}
+              disabled={isAutomating || isAddingCases || isAddingCustomCase}
               style={{ display: 'flex', alignItems: 'center', gap: 8 }}
             >
               {isAutomating ? (

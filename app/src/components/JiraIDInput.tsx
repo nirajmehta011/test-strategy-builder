@@ -1,23 +1,30 @@
 import { useState } from 'react'
+import type { TestCase } from '../services/aiService'
+import { parseCSVToTestCases } from '../services/exportService'
 
-export type GenerationMode = 'strategy' | 'plan' | 'cases'
+export type GenerationMode = 'strategy' | 'plan' | 'cases' | 'automate_csv'
 
 interface JiraIDInputProps {
   onGenerate: (jiraId: string, mode: GenerationMode) => Promise<void>
+  onAutomateCSV?: (testCases: TestCase[], fileName: string) => Promise<void>
   loading: boolean
   activeMode: GenerationMode
 }
 
 const MODES: { id: GenerationMode; icon: string; label: string; sublabel: string; color: string }[] = [
-  { id: 'strategy', icon: '🎯', label: 'Test Strategy', sublabel: 'Risk-based QA approach', color: '#6366f1' },
-  { id: 'plan',     icon: '📋', label: 'Test Plan',     sublabel: 'RICE-POT framework',      color: '#8b5cf6' },
-  { id: 'cases',    icon: '🧪', label: 'Test Cases',    sublabel: 'Jira/Zephyr format',      color: '#06b6d4' },
+  { id: 'strategy',     icon: '🎯', label: 'Test Strategy', sublabel: 'Risk-based QA approach', color: '#6366f1' },
+  { id: 'plan',         icon: '📋', label: 'Test Plan',     sublabel: 'RICE-POT framework',      color: '#8b5cf6' },
+  { id: 'cases',        icon: '🧪', label: 'Test Cases',    sublabel: 'Jira/Zephyr format',      color: '#06b6d4' },
+  { id: 'automate_csv', icon: '🤖', label: 'Automate CSV',  sublabel: 'Playwright from CSV file',color: '#10b981' },
 ]
 
-export default function JiraIDInput({ onGenerate, loading, activeMode }: JiraIDInputProps) {
+export default function JiraIDInput({ onGenerate, onAutomateCSV, loading, activeMode }: JiraIDInputProps) {
   const [jiraId, setJiraId] = useState('')
   const [selectedMode, setSelectedMode] = useState<GenerationMode>(activeMode)
   const [validationError, setValidationError] = useState<string | null>(null)
+  
+  // CSV File Upload State
+  const [csvFile, setCsvFile] = useState<File | null>(null)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -28,12 +35,46 @@ export default function JiraIDInput({ onGenerate, loading, activeMode }: JiraIDI
     onGenerate(trimmed, selectedMode)
   }
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setCsvFile(file)
+      setValidationError(null)
+    }
+  }
+
+  const handleClearCSV = () => {
+    setCsvFile(null)
+  }
+
+  const handleCSVSubmit = () => {
+    if (!csvFile) return
+    const reader = new FileReader()
+    reader.onload = async (event) => {
+      try {
+        const text = event.target?.result as string
+        const cases = parseCSVToTestCases(text)
+        if (cases.length === 0) {
+          setValidationError('No valid test cases found in CSV. Please verify that column headers match: "Summary", "Step Action", etc.')
+          return
+        }
+        setValidationError(null)
+        if (onAutomateCSV) {
+          await onAutomateCSV(cases, csvFile.name)
+        }
+      } catch (err: any) {
+        setValidationError(err.message || 'Failed to parse CSV file.')
+      }
+    }
+    reader.readAsText(csvFile)
+  }
+
   const activeInfo = MODES.find(m => m.id === selectedMode)!
 
   return (
     <div className="jira-input-card">
       {/* Mode Selector */}
-      <div className="mode-selector">
+      <div className="mode-selector" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
         {MODES.map(mode => (
           <button
             key={mode.id}
@@ -52,53 +93,139 @@ export default function JiraIDInput({ onGenerate, loading, activeMode }: JiraIDI
         ))}
       </div>
 
-      {/* Input row */}
-      <form onSubmit={handleSubmit}>
-        <label className="jira-input-label">
-          Jira Issue ID
-          <span className="jira-input-mode-tag" style={{ backgroundColor: `${activeInfo.color}20`, color: activeInfo.color }}>
-            {activeInfo.icon} {activeInfo.label}
-          </span>
-        </label>
-
-        <div className="jira-input-wrapper">
-          <input
-            id="jira-id-input"
-            type="text"
-            value={jiraId}
-            onChange={e => { setJiraId(e.target.value); setValidationError(null) }}
-            placeholder="e.g., SCRUM-6, PROJ-123, EPIC-42"
-            className="jira-input"
-            disabled={loading}
-            autoFocus
-          />
-
-          <button
-            id="generate-btn"
-            type="submit"
-            disabled={loading}
-            className="btn-primary btn-generate"
-            style={{ background: `linear-gradient(135deg, ${activeInfo.color}, ${activeInfo.color}cc)` }}
+      {selectedMode === 'automate_csv' ? (
+        <div className="csv-upload-wrapper animate-in" style={{ padding: '8px 0' }}>
+          <label className="jira-input-label" style={{ marginBottom: 8, display: 'block', textAlign: 'left' }}>
+            Upload Test Cases CSV File
+          </label>
+          <label 
+            className="csv-upload-label" 
+            style={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              padding: '24px 16px', 
+              background: 'rgba(255, 255, 255, 0.02)', 
+              border: '1px dashed rgba(255, 255, 255, 0.12)', 
+              borderRadius: 8, 
+              cursor: loading ? 'not-allowed' : 'pointer', 
+              transition: 'var(--transition)',
+              opacity: loading ? 0.6 : 1
+            }}
           >
-            {loading ? (
-              <>
-                <span className="btn-spinner" />
-                Generating…
-              </>
-            ) : (
-              <>{activeInfo.icon} Generate</>
-            )}
-          </button>
+            <span style={{ fontSize: 28, marginBottom: 8 }}>📥</span>
+            <span style={{ fontSize: 13, fontWeight: 'bold', color: 'var(--text-primary)' }}>Click to upload CSV file</span>
+            <span style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>Supports Jira/Zephyr export files with Summary & step actions</span>
+            <input
+              type="file"
+              accept=".csv"
+              onChange={handleFileChange}
+              disabled={loading}
+              style={{ display: 'none' }}
+            />
+          </label>
+
+          {csvFile && (
+            <div style={{ marginTop: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(16, 185, 129, 0.04)', border: '1px solid rgba(16, 185, 129, 0.15)', borderRadius: 6, padding: '8px 12px' }}>
+              <span style={{ fontSize: 12, color: '#10b981', fontWeight: 500 }}>📄 {csvFile.name} ({Math.round(csvFile.size / 1024)} KB)</span>
+              <button
+                type="button"
+                onClick={handleClearCSV}
+                disabled={loading}
+                style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: 12, cursor: 'pointer' }}
+              >
+                Remove
+              </button>
+            </div>
+          )}
+
+          {validationError && (
+            <p className="jira-input-error" style={{ marginTop: 8, textAlign: 'left' }}>⚠️ {validationError}</p>
+          )}
+
+          {csvFile && (
+            <button
+              type="button"
+              onClick={handleCSVSubmit}
+              disabled={loading}
+              className="btn-primary btn-generate"
+              style={{ 
+                width: '100%', 
+                marginTop: 16, 
+                padding: '12px',
+                background: 'linear-gradient(135deg, #10b981, #059669)', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                gap: 8,
+                borderRadius: 8,
+                fontWeight: 'bold',
+                color: '#fff',
+                border: 'none',
+                cursor: 'pointer'
+              }}
+            >
+              {loading ? (
+                <>
+                  <span className="btn-spinner" />
+                  Parsing & Automating...
+                </>
+              ) : (
+                <>🤖 Automate Cases from CSV</>
+              )}
+            </button>
+          )}
         </div>
+      ) : (
+        /* Input row */
+        <form onSubmit={handleSubmit}>
+          <label className="jira-input-label">
+            Jira Issue ID
+            <span className="jira-input-mode-tag" style={{ backgroundColor: `${activeInfo.color}20`, color: activeInfo.color }}>
+              {activeInfo.icon} {activeInfo.label}
+            </span>
+          </label>
 
-        {validationError && (
-          <p className="jira-input-error">⚠️ {validationError}</p>
-        )}
+          <div className="jira-input-wrapper">
+            <input
+              id="jira-id-input"
+              type="text"
+              value={jiraId}
+              onChange={e => { setJiraId(e.target.value); setValidationError(null) }}
+              placeholder="e.g., SCRUM-6, PROJ-123, EPIC-42"
+              className="jira-input"
+              disabled={loading}
+              autoFocus
+            />
 
-        <p className="jira-input-hint">
-          Uses configured Jira credentials + {activeInfo.label} generation via selected AI provider
-        </p>
-      </form>
+            <button
+              id="generate-btn"
+              type="submit"
+              disabled={loading}
+              className="btn-primary btn-generate"
+              style={{ background: `linear-gradient(135deg, ${activeInfo.color}, ${activeInfo.color}cc)` }}
+            >
+              {loading ? (
+                <>
+                  <span className="btn-spinner" />
+                  Generating…
+                </>
+              ) : (
+                <>{activeInfo.icon} Generate</>
+              )}
+            </button>
+          </div>
+
+          {validationError && (
+            <p className="jira-input-error">⚠️ {validationError}</p>
+          )}
+
+          <p className="jira-input-hint">
+            Uses configured Jira credentials + {activeInfo.label} generation via selected AI provider
+          </p>
+        </form>
+      )}
     </div>
   )
 }

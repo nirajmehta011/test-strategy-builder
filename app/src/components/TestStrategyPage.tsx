@@ -31,6 +31,9 @@ export default function TestStrategyPage() {
   const [isAddingCases, setIsAddingCases] = useState(false)
   const [isAutomating, setIsAutomating] = useState(false)
   const [playwrightData, setPlaywrightData] = useState<any | null>(null)
+  const [noMoreCases, setNoMoreCases] = useState(false)
+  const [isAddingCustomCase, setIsAddingCustomCase] = useState(false)
+
 
 
   // View tab for generated results (independent of mode)
@@ -82,6 +85,7 @@ export default function TestStrategyPage() {
       const fetchedIssue = await jiraService.fetchIssue(jiraId)
       setJiraIssue(fetchedIssue)
       setPlaywrightData(null) // reset playwright data on new ticket / regeneration
+      setNoMoreCases(false) // reset noMoreCases state
 
       const prov = settings.ai.provider
       const model = getModel()
@@ -116,12 +120,36 @@ export default function TestStrategyPage() {
       const apiKey = getApiKey()
       const prov = settings.ai.provider
       const model = getModel()
-      const newCases = await aiService.generateMoreTestCases(prov, apiKey, model, jiraIssue, testCases)
-      setTestCases([...testCases, ...newCases])
+      const response = await aiService.generateMoreTestCases(prov, apiKey, model, jiraIssue, testCases)
+      
+      if (response.noMoreCases) {
+        setNoMoreCases(true)
+      } else {
+        setTestCases([...testCases, ...response.testCases])
+        setNoMoreCases(false)
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to generate more test cases. Please try again.')
     } finally {
       setIsAddingCases(false)
+    }
+  }
+
+  const addCustomTestCase = async (customScenario: string) => {
+    if (!jiraIssue || !testCases) return
+    setIsAddingCustomCase(true)
+    setError(null)
+    try {
+      const apiKey = getApiKey()
+      const prov = settings.ai.provider
+      const model = getModel()
+      const customCase = await aiService.generateCustomTestCase(prov, apiKey, model, jiraIssue, testCases, customScenario)
+      setTestCases([...testCases, customCase])
+      setNoMoreCases(false) // Reset "no more cases" since a custom one was added
+    } catch (err: any) {
+      setError(err.message || 'Failed to generate custom testcase. Please try again.')
+    } finally {
+      setIsAddingCustomCase(false)
     }
   }
 
@@ -142,6 +170,54 @@ export default function TestStrategyPage() {
     }
   }
 
+  const handleAutomateCSV = async (importedCases: TestCase[], fileName: string) => {
+    setLoading(true)
+    setError(null)
+    setCurrentJiraId(`CSV: ${fileName}`)
+    setActiveMode('cases')
+    setStrategy(null)
+    setTestPlan(null)
+    setNoMoreCases(false)
+
+    // Set a mock JIRA issue so that AI prompts can still run with standard context
+    const mockIssue = {
+      key: 'CSV',
+      summary: `Imported Suite: ${fileName}`,
+      description: `Test cases imported directly from CSV file ${fileName}.`,
+      priority: 'Medium',
+      status: 'Open',
+      created: new Date().toISOString(),
+      updated: new Date().toISOString()
+    }
+
+    setJiraIssue(mockIssue)
+    setTestCases(importedCases)
+    setViewTab('cases')
+    setPlaywrightData(null)
+
+    try {
+      const apiKey = getApiKey()
+      if (!apiKey) {
+        const names: Record<string, string> = {
+          groq: 'Groq', openrouter: 'OpenRouter', gemini: 'Gemini', openai: 'OpenAI'
+        }
+        throw new Error(`Please enter your ${names[settings.ai.provider]} API key in the left settings panel.`)
+      }
+
+      const prov = settings.ai.provider
+      const model = getModel()
+
+      // Call automation directly
+      const data = await aiService.generatePlaywrightTests(prov, apiKey, model, mockIssue, importedCases)
+      setPlaywrightData(data)
+      setProviderUsed(prov)
+    } catch (err: any) {
+      setError(err.message || 'Automation failed. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const hasAnyOutput = strategy || testPlan || testCases
 
   const handleCopy = async () => {
@@ -154,6 +230,7 @@ export default function TestStrategyPage() {
     strategy: 'Crafting risk-based test strategy',
     plan: 'Building RICE-POT test plan (this may take ~60s)',
     cases: 'Generating detailed test cases (this may take ~60s)',
+    automate_csv: 'Parsing and automating test cases from CSV (this may take ~60s)'
   }
 
   return (
@@ -167,7 +244,7 @@ export default function TestStrategyPage() {
       </div>
 
       {/* Input */}
-      <JiraIDInput onGenerate={generate} loading={loading} activeMode={activeMode} />
+      <JiraIDInput onGenerate={generate} onAutomateCSV={handleAutomateCSV} loading={loading} activeMode={activeMode} />
 
       {/* Error */}
       {error && (
@@ -261,6 +338,9 @@ export default function TestStrategyPage() {
               onAutomateCases={automateTestCases}
               isAutomating={isAutomating}
               playwrightData={playwrightData}
+              onAddCustomCase={addCustomTestCase}
+              isAddingCustomCase={isAddingCustomCase}
+              noMoreCases={noMoreCases}
             />
           )}
         </>
