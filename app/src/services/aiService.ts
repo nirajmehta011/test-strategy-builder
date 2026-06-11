@@ -554,8 +554,9 @@ Steps:
 ${tc.steps.map(s => `  ${s.stepNumber}. Action: ${s.action} | Data: ${s.testData} | Expected: ${s.expectedResult}`).join('\n')}`
   }).join('\n\n')
 
-  return `You are a senior test automation engineer with 15+ years of experience in Playwright, TypeScript, and modern test automation design patterns.
-You are tasked with generating a complete, properly structured Playwright test automation framework repository for the following test cases.
+  return `You are an expert Test Automation Architect specializing in Playwright, TypeScript, and Page Object Model (POM) design patterns. 
+
+Your task is to take the attached test case definition and generate a production-ready, fully functional Playwright automation framework. 
 
 Jira Issue: ${jiraIssue.key}
 Summary: ${jiraIssue.summary}
@@ -564,33 +565,43 @@ Description: ${jiraIssue.description}
 Here are the test cases to automate:
 ${serializedCases}
 
-Task:
-Generate a properly structured Playwright test automation framework using TypeScript.
-Your output must be a single raw JSON object containing the code for all configurations and test spec files. Do not output any markdown code fences (like \`\`\`json), no text before or after the JSON.
+### CRITICAL INSTRUCTIONS:
+1. NO PLACEHOLDERS: Do not use code comments like "// logic goes here" or "// add assertions here". All loop steps, conditions, configuration arrays, and assertions must be written out as fully executable code.
+2. MODULAR ARCHITECTURE: You must separate selectors/actions from the test specs. Implement a clean Page Object Model.
+3. ENVIRONMENT AGNOSTIC: Do not hardcode environment base URLs inside the test steps. Use environment variables.
+4. ZIP-READY STRUCTURE: Structure your response into a single raw JSON object matching the schema below. Do not output any markdown code fences (like \`\`\`json), no text before or after the JSON, so the application can programmatically parse them into a directory structure and create a downloadble .zip file.
 
 JSON Schema to follow:
 {
-  "readme": "Markdown content describing the framework, setup, how to run tests, and best practices...",
-  "packageJson": "package.json content as a string, including @playwright/test, typescript, and other dependencies...",
-  "tsconfigJson": "tsconfig.json content as a string...",
-  "playwrightConfig": "playwright.config.ts configuration content as a string...",
+  "readme": "Markdown content for README.md documenting the architecture, folder structure, prerequisites, setup commands, execution commands, and troubleshooting tips...",
+  "packageJson": "package.json content containing current stable versions of @playwright/test, typescript, and dotenv. Include a script for running tests and a script for generating reports...",
+  "tsconfigJson": "tsconfig.json content tailored for Playwright (CommonJS/ESNext compatibility)...",
+  "playwrightConfig": "playwright.config.ts content configuring the framework to support: A base URL read from environment variables; multi-browser execution (Chromium, Firefox, WebKit) defaulted to Chromium; trace, video, and screenshot collection 'on-first-retry' or 'only-on-failure'; and leveraging global authentication storage state file ('playwright/.auth/user.json') to avoid repetitive logins...",
   "testFiles": [
     {
+      "filename": ".env.example",
+      "code": "Template for required environment variables (e.g., BASE_URL, TEST_USER, TEST_PASSWORD)..."
+    },
+    {
+      "filename": "tests/auth.setup.ts",
+      "code": "Playwright setup test that performs the login workflow exactly once, saves the storage state to 'playwright/.auth/user.json', and allows all subsequent tests to reuse the authenticated session..."
+    },
+    {
+      "filename": "pages/base.page.ts",
+      "code": "BasePage class that encapsulates common interactions (e.g., waiting for network idle, custom element clicking, safe text input)..."
+    },
+    {
+      "filename": "pages/form-builder.page.ts",
+      "code": "(Adapt this file name/content dynamically based on the input test case context) Create a Page Object class inheriting from BasePage. Map out locator properties using semantic Playwright locators (page.getByRole, page.getByText, page.getByPlaceholder). Implement strongly-typed methods for interactions..."
+    },
+    {
       "filename": "tests/TC-001.spec.ts",
-      "code": "TypeScript Playwright test script for TC-001..."
+      "code": "TypeScript Playwright test spec for TC-001. It must import the required Page Objects, be exceptionally clean, readable, and business-focused (delegating technical locator interaction to the Page Objects), and use robust assertions..."
     }
   ]
 }
 
-Test Automation Best Practices to follow:
-1. Each test case MUST have its own separate spec file under the \`tests/\` folder (e.g., \`tests/TC-001.spec.ts\`).
-2. Write clean, robust, and readable Playwright TypeScript code.
-3. Import \`test\` and \`expect\` from \`@playwright/test\`.
-4. Implement all steps of the test case, representing them as clear actions (e.g., navigating, clicking, typing) and expectations (e.g., expecting visibility, text matches, URL states).
-5. Since there is no live application, use logical selectors (like \`page.getByRole('button', { name: 'Submit' })\` or custom placeholders like \`page.locator('#submit-btn')\`) and document them with comments.
-6. Provide helpful comments corresponding to the test case steps.
-7. Include mock data or parameters in the test files based on the 'testData' field.
-8. CRITICAL REQUIREMENT: You MUST generate the complete, fully implemented Playwright TypeScript code for EACH and EVERY test case provided in the input list. Do not use draft structures, mock structures, or skip any test cases. Provide complete spec files for all test cases.
+Ensure you generate the complete spec files, Page Object files, environment template, and setup scripts for all the test cases provided in the input list inside the 'testFiles' array.
 
 Output ONLY the raw JSON object. Start with { and end with }`
 }
@@ -604,8 +615,9 @@ Steps:
 ${tc.steps.map(s => `  ${s.stepNumber}. Action: ${s.action} | Data: ${s.testData} | Expected: ${s.expectedResult}`).join('\n')}`
   }).join('\n\n')
 
-  return `You are a senior test automation engineer with 15+ years of experience in Playwright, TypeScript, and modern test automation design patterns.
-You are automating a subset of test cases for the following Jira issue.
+  return `You are an expert Test Automation Architect specializing in Playwright, TypeScript, and Page Object Model (POM) design patterns.
+
+Your task is to take the attached test case definition batch and generate fully functional Playwright test spec files and any necessary Page Object classes.
 
 Jira Issue: ${jiraIssue.key}
 Summary: ${jiraIssue.summary}
@@ -613,29 +625,24 @@ Summary: ${jiraIssue.summary}
 Here are the test cases to automate in this batch:
 ${serializedCases}
 
-Task:
-Generate Playwright TypeScript test spec files for ONLY the test cases in this batch.
-Your output must be a single raw JSON object matching the schema below. Do not output any markdown code fences (like \`\`\`json), no text before or after the JSON.
+### CRITICAL INSTRUCTIONS:
+1. NO PLACEHOLDERS: Do not use code comments like "// logic goes here" or "// add assertions here". All steps and assertions must be written out as fully executable code.
+2. MODULAR ARCHITECTURE: You must separate selectors/actions from the test specs. Implement page object pattern class modifications or new page classes if needed for these spec files.
+3. ZIP-READY STRUCTURE: Structure your response into a single raw JSON object matching the schema below. Do not output any markdown code fences (like \`\`\`json), no text before or after the JSON.
 
 JSON Schema to follow:
 {
   "testFiles": [
     {
+      "filename": "pages/form-builder.page.ts",
+      "code": "TypeScript Page Object code if new locators/methods are needed for this batch..."
+    },
+    {
       "filename": "tests/TC-006.spec.ts",
-      "code": "TypeScript Playwright test script code for TC-006..."
+      "code": "TypeScript Playwright test spec for TC-006 importing and utilizing the Page Object model..."
     }
   ]
 }
-
-Test Automation Best Practices to follow:
-1. Each test case MUST have its own separate spec file under the \`tests/\` folder (e.g., \`tests/TC-006.spec.ts\`).
-2. Write clean, robust, and readable Playwright TypeScript code.
-3. Import \`test\` and \`expect\` from \`@playwright/test\`.
-4. Implement all steps of the test case, representing them as clear actions (e.g., navigating, clicking, typing) and expectations (e.g., expecting visibility, text matches, URL states).
-5. Since there is no live application, use logical selectors (like \`page.getByRole('button', { name: 'Submit' })\` or custom placeholders like \`page.locator('#submit-btn')\`) and document them with comments.
-6. Provide helpful comments corresponding to the test case steps.
-7. Include mock data or parameters in the test files based on the 'testData' field.
-8. CRITICAL REQUIREMENT: You MUST generate the complete, fully implemented Playwright TypeScript code for EACH and EVERY test case in the list. Do not use draft structures, mock structures, or skip any test cases. Provide complete spec files for all test cases in this batch.
 
 Output ONLY the raw JSON object. Start with { and end with }`
 }
