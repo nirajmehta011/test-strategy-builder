@@ -350,73 +350,65 @@ List standards, frameworks, and documentation referenced.
 Be exhaustive, specific, and professional. This must be a document a QA director would be proud to present to stakeholders.`
 
 // ─── Test Cases Prompt ────────────────────────────────────────────────────────
-const buildTestCasesPrompt = (jiraIssue: any) => `You are a senior QA engineer creating detailed test cases for Jira/Zephyr Scale. Generate comprehensive test cases that will be imported directly into Jira.
+const buildTestCasesPrompt = (jiraIssue: any) => `You are a senior QA engineer. Output ONLY a raw JSON array — no markdown, no explanation, no code fences, no text before or after the array.
 
 Jira Issue: ${jiraIssue.key}
 Summary: ${jiraIssue.summary}
 Description: ${jiraIssue.description}
 Priority: ${jiraIssue.priority}
-Status: ${jiraIssue.status}
 
-CRITICAL INSTRUCTIONS:
-1. Generate MINIMUM 20 test cases, targeting 25-30 for thorough coverage
-2. Each test case MUST have 4-8 granular steps (more is better)
-3. Steps must be atomic - one action per step
-4. Cover ALL scenario types: happy path, negative, boundary, edge cases, UI/UX, security, performance
-5. Be EXTREMELY specific - use exact button names, field names, values from the description
-6. Think like an adversarial tester trying to break the system
+Generate exactly 15 detailed test cases covering these scenario types:
+- 4 happy_path (core workflows)
+- 3 negative (invalid inputs, wrong states)
+- 2 boundary (min/max/null/overflow)
+- 2 edge_case (unusual valid scenarios, race conditions)
+- 2 ui_ux (visual, accessibility, error messages)
+- 1 security (XSS, injection, auth bypass)
+- 1 performance (response time, concurrent load)
 
-Return ONLY a valid JSON array with NO additional text, in this EXACT format:
-
+Each test case MUST follow this EXACT JSON schema. No deviations:
 [
   {
     "id": "TC-001",
-    "summary": "Verify [specific action] with [specific condition]",
+    "summary": "Verify [specific action] under [specific condition]",
     "issueType": "Test",
-    "priority": "Critical|High|Medium|Low",
-    "labels": "functional,smoke,regression",
-    "testType": "Functional|Integration|UI|Performance|Security|Negative|Boundary",
-    "precondition": "Exact precondition that must be true before test starts",
-    "scenarioType": "happy_path|negative|edge_case|boundary|ui_ux|security|performance",
-    "component": "Component being tested",
-    "estimatedTime": "15m",
+    "priority": "Critical",
+    "labels": "functional,smoke",
+    "testType": "Functional",
+    "precondition": "User is logged in and on the [Page] page",
+    "scenarioType": "happy_path",
+    "component": "[Component name]",
+    "estimatedTime": "10m",
     "steps": [
       {
         "stepNumber": 1,
-        "action": "Navigate to [specific URL/page] and [exact action]",
-        "testData": "Exact test data, values, or credentials to use (or 'N/A')",
-        "expectedResult": "System [does exactly this]. [Field/element] shows [exact value/state]."
+        "action": "Navigate to [exact page/URL]",
+        "testData": "N/A",
+        "expectedResult": "[Exact page] loads successfully with [elements] visible"
       },
       {
         "stepNumber": 2,
-        "action": "Enter [value] in the [Field Name] field",
-        "testData": "Specific value: 'example@test.com'",
-        "expectedResult": "Input is accepted. Field shows 'example@test.com'. No validation error appears."
+        "action": "Enter [exact value] in [exact field name]",
+        "testData": "[exact test value]",
+        "expectedResult": "Field accepts input and shows [exact value]"
+      },
+      {
+        "stepNumber": 3,
+        "action": "Click [exact button label]",
+        "testData": "N/A",
+        "expectedResult": "System [performs action]. [Confirmation/result] is shown."
       }
     ],
     "status": "Not Executed"
   }
 ]
 
-Scenario type distribution to FOLLOW:
-- 6 Happy Path tests (core workflows that must work)
-- 5 Negative tests (invalid inputs, wrong states, unauthorized access)
-- 4 Boundary tests (min/max values, empty/null, overflow)  
-- 4 Edge Case tests (unusual but valid scenarios, race conditions, timeouts)
-- 3 UI/UX tests (visual elements, accessibility, responsive, error messages)
-- 2 Security tests (XSS, injection, auth bypass, data exposure)
-- 2 Performance/Load tests (response time, concurrent users)
-
-Think deeply about:
-- What could go wrong with each user interaction?
-- What happens with empty fields, null values, or maximum length inputs?
-- What if the network drops during an operation?
-- What if a user tries to access restricted resources?
-- What happens with special characters, unicode, SQL injection strings?
-- What if two users perform the same action simultaneously?
-- What are the exact boundary values for any numeric/date inputs?
-
-RETURN ONLY THE JSON ARRAY. NO PREAMBLE. NO EXPLANATION. NO MARKDOWN CODE BLOCKS.`
+Rules:
+- Be specific to THIS Jira issue — use field names, values, and flows from the description
+- Each step must be ONE atomic action
+- testData must be a concrete value or "N/A"
+- expectedResult must be measurable and specific
+- Output the complete JSON array only. Start your response with [ and end with ]`
 
 class AIService {
   async fetchModels(provider: AIProvider, apiKey: string): Promise<AIModel[]> {
@@ -492,28 +484,76 @@ class AIService {
     const prompt = buildTestCasesPrompt(jiraIssue)
     const raw = await this.callAI(provider, apiKey, model, prompt, 120000)
 
-    // Parse JSON response — strip markdown fences if present
-    let jsonStr = raw.trim()
-    if (jsonStr.startsWith('```')) {
-      jsonStr = jsonStr.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
+    return this.parseTestCasesJSON(raw)
+  }
+
+  private parseTestCasesJSON(raw: string): TestCase[] {
+    // ── Strategy 1: Remove ALL markdown code fences (nested too) ─────────────
+    let cleaned = raw
+      .replace(/^```(?:json|JSON)?\s*/m, '')  // opening fence
+      .replace(/\s*```\s*$/m, '')              // closing fence
+      .replace(/```/g, '')                     // any remaining fences
+      .trim()
+
+    // ── Strategy 2: Extract text between first [ and last ] ───────────────────
+    const firstBracket = cleaned.indexOf('[')
+    const lastBracket = cleaned.lastIndexOf(']')
+    if (firstBracket !== -1 && lastBracket !== -1 && lastBracket > firstBracket) {
+      cleaned = cleaned.slice(firstBracket, lastBracket + 1)
     }
 
+    // ── Strategy 3: Try parsing the extracted string directly ─────────────────
     try {
-      const parsed = JSON.parse(jsonStr)
-      if (!Array.isArray(parsed)) throw new Error('Invalid response format')
-      return parsed as TestCase[]
-    } catch {
-      // Attempt to extract JSON array from response
-      const match = jsonStr.match(/\[\s*\{[\s\S]*\}\s*\]/)
-      if (match) {
+      const parsed = JSON.parse(cleaned)
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed as TestCase[]
+    } catch { /* continue to next strategy */ }
+
+    // ── Strategy 4: Fix common JSON issues then parse ─────────────────────────
+    const fixed = cleaned
+      .replace(/,\s*([}\]])/g, '$1')           // trailing commas before } or ]
+      .replace(/([{,]\s*)(\w+)\s*:/g, '$1"$2":') // unquoted keys
+      .replace(/:\s*'([^']*)'/g, ': "$1"')      // single-quoted values
+      .replace(/[\x00-\x1F\x7F]/g, ' ')         // control characters
+      .trim()
+
+    try {
+      const parsed = JSON.parse(fixed)
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed as TestCase[]
+    } catch { /* continue to next strategy */ }
+
+    // ── Strategy 5: Extract individual objects and reassemble the array ───────
+    const objectMatches = [...cleaned.matchAll(/\{[^{}]*(?:\{[^{}]*\}[^{}]*)*/g)]
+    if (objectMatches.length > 0) {
+      const candidates: TestCase[] = []
+      for (const m of objectMatches) {
         try {
-          return JSON.parse(match[0]) as TestCase[]
-        } catch {
-          throw new Error('Failed to parse test cases from AI response. Please try again.')
-        }
+          const obj = JSON.parse(m[0].replace(/,\s*([}\]])/g, '$1'))
+          if (obj && (obj.summary || obj.id)) candidates.push(obj as TestCase)
+        } catch { /* skip malformed objects */ }
       }
-      throw new Error('AI returned an unexpected format. Please try again with a different model.')
+      if (candidates.length > 0) return candidates
     }
+
+    // ── Strategy 6: Split on TC- pattern — partial recovery ──────────────────
+    const tcBlocks = cleaned.split(/(?=\{[^{]*"id"\s*:\s*"TC-\d+")/).filter(s => s.trim().startsWith('{'))
+    if (tcBlocks.length > 0) {
+      const recovered: TestCase[] = []
+      for (const block of tcBlocks) {
+        const chunk = block.replace(/,?\s*$/, '').replace(/,$/, '').trim()
+        const chunkFixed = chunk.endsWith('}') ? chunk : chunk + '}'
+        try {
+          const obj = JSON.parse(chunkFixed.replace(/,\s*([}\]])/g, '$1'))
+          if (obj?.summary) recovered.push(obj as TestCase)
+        } catch { /* skip */ }
+      }
+      if (recovered.length > 0) return recovered
+    }
+
+    // ── All strategies exhausted ──────────────────────────────────────────────
+    throw new Error(
+      'The AI response could not be parsed as test cases. This usually happens with smaller models or when the response was truncated. ' +
+      'Try: (1) a larger model like GPT-4o, Claude 3.5 Sonnet, or Gemini 1.5 Pro, (2) a simpler Jira ticket, or (3) retry the same ticket.'
+    )
   }
 }
 
