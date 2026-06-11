@@ -1,7 +1,7 @@
 {
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist",
-  "installCommand": "npm install",
+  "framework": "vite",
+  "buildCommand": "cd app && npm install && npm run build",
+  "outputDirectory": "app/dist",
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/index.mjs" },
     { "source": "/(.*)", "destination": "/index.html" }
