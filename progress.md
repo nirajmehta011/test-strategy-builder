@@ -177,3 +177,14 @@
 | `src/services/aiService.ts` | Added PDF test case extraction prompt and callAI query handler. |
 | `src/components/TestStrategyPage.tsx` | Renamed orchestrator to handleAutomateFile, calling AI extraction for PDF raw text inputs. |
 | `src/components/JiraIDInput.tsx` | Expanded accept tags, routed file buffers by suffix format, and renamed props to onAutomateFile. |
+
+## v4.4 – POM Playwright Prompt Integration ✅
+
+### New Features Implemented
+- ✅ **POM Architecture Prompts** — Rewrote generator prompts to enforce modular, structured directories containing setup specs, Page Object classes, environment variable mock configuration files, and clean test spec files.
+- ✅ **No-Placeholder Rule** — Configured prompts to demand fully executable code blocks for assertions and loop data objects, preventing mock/draft comment structures.
+
+### Files Modified
+| File | Change |
+|------|--------|
+| `src/services/aiService.ts` | Updated `buildAutomatePrompt` and `buildAutomateChunkPrompt` to use Page Object Model blueprints. |

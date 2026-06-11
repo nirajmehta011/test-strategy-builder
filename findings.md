@@ -67,6 +67,7 @@
 24. **Dark Mode** — default dark, persisted to localStorage.
 25. **Complete Batch Automation (v4.2)** — Automated test case suites are chunked into batches of 5, preventing Vercel function timeouts and ensuring complete Playwright code is written for every single test case without placeholders.
 26. **Excel & PDF Automation Support (v4.3)** — Extended "Automate Any Cases" to accept Excel (.xlsx, .xls) and PDF (.pdf) files directly. Excel files are parsed client-side via SheetJS, and PDFs are parsed via client-side PDF.js followed by AI-driven test case extraction.
+27. **Page Object Model Prompt Architecture (v4.4)** — Configured the automation generators to output Playwright test code structured according to the modular Page Object Model (POM) design pattern, featuring global setups, environment configurations, and complete spec files.
 
 ## New Dependencies (v4.1)
 | Package | Version | Purpose |
