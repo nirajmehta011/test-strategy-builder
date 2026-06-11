@@ -1,0 +1,288 @@
+import { useState, useMemo } from 'react'
+import { exportTestCasesAsCSV } from '../services/exportService'
+import type { TestCase } from '../services/aiService'
+
+interface TestCasesDisplayProps {
+  testCases: TestCase[]
+  jiraId: string
+  provider: string
+}
+
+const PRIORITY_CONFIG: Record<string, { color: string; bg: string; dot: string }> = {
+  Critical: { color: '#ef4444', bg: 'rgba(239,68,68,0.1)',  dot: '#ef4444' },
+  High:     { color: '#f97316', bg: 'rgba(249,115,22,0.1)', dot: '#f97316' },
+  Medium:   { color: '#eab308', bg: 'rgba(234,179,8,0.1)',  dot: '#eab308' },
+  Low:      { color: '#22c55e', bg: 'rgba(34,197,94,0.1)',  dot: '#22c55e' },
+}
+
+const SCENARIO_CONFIG: Record<string, { icon: string; label: string; color: string }> = {
+  happy_path:  { icon: '✅', label: 'Happy Path',   color: '#22c55e' },
+  negative:    { icon: '❌', label: 'Negative',      color: '#ef4444' },
+  edge_case:   { icon: '⚡', label: 'Edge Case',     color: '#f97316' },
+  boundary:    { icon: '📐', label: 'Boundary',      color: '#eab308' },
+  ui_ux:       { icon: '🎨', label: 'UI/UX',         color: '#8b5cf6' },
+  security:    { icon: '🔒', label: 'Security',      color: '#06b6d4' },
+  performance: { icon: '⚡', label: 'Performance',   color: '#6366f1' },
+}
+
+const FILTER_OPTIONS = [
+  { id: 'all',         label: 'All Cases',    icon: '📋' },
+  { id: 'happy_path',  label: 'Happy Path',   icon: '✅' },
+  { id: 'negative',    label: 'Negative',     icon: '❌' },
+  { id: 'edge_case',   label: 'Edge Cases',   icon: '⚡' },
+  { id: 'boundary',    label: 'Boundary',     icon: '📐' },
+  { id: 'ui_ux',       label: 'UI/UX',        icon: '🎨' },
+  { id: 'security',    label: 'Security',     icon: '🔒' },
+  { id: 'performance', label: 'Performance',  icon: '📊' },
+]
+
+const providerLabels: Record<string, string> = {
+  groq: '⚡ Groq', openrouter: '🔀 OpenRouter', gemini: '💎 Gemini', openai: '🤖 OpenAI'
+}
+
+export default function TestCasesDisplay({ testCases, jiraId, provider }: TestCasesDisplayProps) {
+  const [filter, setFilter] = useState<string>('all')
+  const [search, setSearch] = useState('')
+  const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [sortBy, setSortBy] = useState<'id' | 'priority' | 'type'>('id')
+
+  const priorityOrder: Record<string, number> = { Critical: 0, High: 1, Medium: 2, Low: 3 }
+
+  const filtered = useMemo(() => {
+    let result = [...testCases]
+    if (filter !== 'all') result = result.filter(tc => tc.scenarioType === filter)
+    if (search) {
+      const q = search.toLowerCase()
+      result = result.filter(tc =>
+        tc.summary?.toLowerCase().includes(q) ||
+        tc.component?.toLowerCase().includes(q) ||
+        tc.testType?.toLowerCase().includes(q)
+      )
+    }
+    if (sortBy === 'priority') result.sort((a, b) => (priorityOrder[a.priority] ?? 9) - (priorityOrder[b.priority] ?? 9))
+    if (sortBy === 'type') result.sort((a, b) => (a.scenarioType || '').localeCompare(b.scenarioType || ''))
+    return result
+  }, [testCases, filter, search, sortBy])
+
+  // Stats
+  const stats = useMemo(() => {
+    const counts: Record<string, number> = {}
+    testCases.forEach(tc => { counts[tc.scenarioType] = (counts[tc.scenarioType] || 0) + 1 })
+    return counts
+  }, [testCases])
+
+  const totalSteps = useMemo(() => testCases.reduce((s, tc) => s + (tc.steps?.length || 0), 0), [testCases])
+
+  return (
+    <div className="animate-in">
+      {/* Stats Bar */}
+      <div className="tc-stats-bar">
+        <div className="tc-stat">
+          <span className="tc-stat-num">{testCases.length}</span>
+          <span className="tc-stat-label">Total Cases</span>
+        </div>
+        <div className="tc-stat">
+          <span className="tc-stat-num">{totalSteps}</span>
+          <span className="tc-stat-label">Total Steps</span>
+        </div>
+        <div className="tc-stat">
+          <span className="tc-stat-num" style={{ color: '#ef4444' }}>{(stats['happy_path'] || 0) + (stats['negative'] || 0)}</span>
+          <span className="tc-stat-label">Functional</span>
+        </div>
+        <div className="tc-stat">
+          <span className="tc-stat-num" style={{ color: '#f97316' }}>{stats['edge_case'] || 0}</span>
+          <span className="tc-stat-label">Edge Cases</span>
+        </div>
+        <div className="tc-stat">
+          <span className="tc-stat-num" style={{ color: '#06b6d4' }}>{stats['security'] || 0}</span>
+          <span className="tc-stat-label">Security</span>
+        </div>
+        <div className="tc-stat">
+          <span className="tc-stat-num" style={{ color: '#6366f1' }}>{stats['boundary'] || 0}</span>
+          <span className="tc-stat-label">Boundary</span>
+        </div>
+        <div className="tc-stat-provider">
+          <span>{providerLabels[provider] || provider}</span>
+        </div>
+      </div>
+
+      {/* Filter + Search Bar */}
+      <div className="tc-toolbar">
+        <div className="tc-filters">
+          {FILTER_OPTIONS.map(opt => {
+            const count = opt.id === 'all' ? testCases.length : (stats[opt.id] || 0)
+            return (
+              <button
+                key={opt.id}
+                className={`tc-filter-btn ${filter === opt.id ? 'active' : ''}`}
+                onClick={() => setFilter(opt.id)}
+              >
+                {opt.icon} {opt.label}
+                {count > 0 && <span className="tc-filter-count">{count}</span>}
+              </button>
+            )
+          })}
+        </div>
+        <div className="tc-toolbar-right">
+          <input
+            type="search"
+            className="tc-search"
+            placeholder="Search cases…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+          <select className="tc-sort" value={sortBy} onChange={e => setSortBy(e.target.value as any)}>
+            <option value="id">Sort: ID</option>
+            <option value="priority">Sort: Priority</option>
+            <option value="type">Sort: Type</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="tc-table-wrapper">
+        <table className="tc-table">
+          <thead>
+            <tr>
+              <th style={{ width: 72 }}>ID</th>
+              <th>Summary</th>
+              <th style={{ width: 90 }}>Type</th>
+              <th style={{ width: 88 }}>Priority</th>
+              <th style={{ width: 110 }}>Scenario</th>
+              <th style={{ width: 80 }}>Steps</th>
+              <th style={{ width: 70 }}>Time</th>
+              <th style={{ width: 50 }}></th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((tc, idx) => {
+              const priorityCfg = PRIORITY_CONFIG[tc.priority] || PRIORITY_CONFIG['Medium']
+              const scenarioCfg = SCENARIO_CONFIG[tc.scenarioType] || { icon: '🔹', label: tc.scenarioType, color: '#6366f1' }
+              const isExpanded = expandedId === tc.id
+
+              return (
+                <>
+                  <tr
+                    key={tc.id}
+                    className={`tc-row ${idx % 2 === 0 ? 'tc-row-even' : ''} ${isExpanded ? 'tc-row-expanded' : ''}`}
+                    onClick={() => setExpandedId(isExpanded ? null : tc.id)}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <td>
+                      <span className="tc-id">{tc.id}</span>
+                    </td>
+                    <td className="tc-summary">{tc.summary}</td>
+                    <td>
+                      <span className="tc-type-badge">{tc.testType}</span>
+                    </td>
+                    <td>
+                      <span className="tc-priority-badge" style={{ color: priorityCfg.color, background: priorityCfg.bg }}>
+                        <span className="tc-priority-dot" style={{ background: priorityCfg.dot }} />
+                        {tc.priority}
+                      </span>
+                    </td>
+                    <td>
+                      <span className="tc-scenario-badge" style={{ color: scenarioCfg.color }}>
+                        {scenarioCfg.icon} {scenarioCfg.label}
+                      </span>
+                    </td>
+                    <td>
+                      <span className="tc-steps-count">{tc.steps?.length || 0} steps</span>
+                    </td>
+                    <td>
+                      <span className="tc-time">{tc.estimatedTime}</span>
+                    </td>
+                    <td>
+                      <span className={`tc-expand-icon ${isExpanded ? 'open' : ''}`}>▶</span>
+                    </td>
+                  </tr>
+
+                  {isExpanded && (
+                    <tr key={`${tc.id}-expanded`} className="tc-detail-row">
+                      <td colSpan={8}>
+                        <div className="tc-detail">
+                          {tc.precondition && (
+                            <div className="tc-precondition">
+                              <span className="tc-detail-label">📌 Precondition:</span>
+                              <span>{tc.precondition}</span>
+                            </div>
+                          )}
+                          {tc.component && (
+                            <div className="tc-component-row">
+                              <span className="tc-detail-label">🔧 Component:</span>
+                              <span className="tc-component-badge">{tc.component}</span>
+                              <span className="tc-detail-label" style={{ marginLeft: 16 }}>🏷️ Labels:</span>
+                              <span className="tc-component-badge">{tc.labels}</span>
+                            </div>
+                          )}
+                          <div className="tc-steps-table-wrapper">
+                            <table className="tc-steps-table">
+                              <thead>
+                                <tr>
+                                  <th style={{ width: 44 }}>#</th>
+                                  <th>Action</th>
+                                  <th style={{ width: '28%' }}>Test Data</th>
+                                  <th style={{ width: '30%' }}>Expected Result</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {(tc.steps || []).map(step => (
+                                  <tr key={step.stepNumber} className="tc-step-row">
+                                    <td>
+                                      <span className="tc-step-num">{step.stepNumber}</span>
+                                    </td>
+                                    <td className="tc-step-action">{step.action}</td>
+                                    <td className="tc-step-data">
+                                      {step.testData && step.testData !== 'N/A' ? (
+                                        <code className="tc-step-data-code">{step.testData}</code>
+                                      ) : (
+                                        <span className="tc-step-na">N/A</span>
+                                      )}
+                                    </td>
+                                    <td className="tc-step-expected">{step.expectedResult}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </>
+              )
+            })}
+          </tbody>
+        </table>
+
+        {filtered.length === 0 && (
+          <div className="tc-empty">
+            <span style={{ fontSize: 32 }}>🔍</span>
+            <p>No test cases match your filter</p>
+          </div>
+        )}
+      </div>
+
+      <div style={{ marginTop: 8, color: 'var(--text-muted)', fontSize: 12 }}>
+        Showing {filtered.length} of {testCases.length} test cases
+      </div>
+
+      {/* Export Bar */}
+      <div className="export-bar" style={{ marginTop: 16 }}>
+        <button
+          className="btn-export btn-export-cyan"
+          onClick={() => exportTestCasesAsCSV(testCases, jiraId)}
+        >
+          📊 Export CSV (Jira Import)
+        </button>
+        <button
+          className="btn-export btn-export-cyan"
+          onClick={() => exportTestCasesAsCSV(filtered, `${jiraId}-filtered`)}
+          disabled={filtered.length === testCases.length}
+        >
+          📊 Export Filtered CSV
+        </button>
+      </div>
+    </div>
+  )
+}

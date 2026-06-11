@@ -64,3 +64,44 @@ You operate within a 3-layer architecture that separates concerns to maximize re
 ## 🛰️ Phase 5: T - Trigger (Deployment)
 **1. Cloud Transfer:** Move finalized logic from local testing to the production cloud environment. **2. Automation:** Set up execution triggers (Cron jobs, Webhooks, or Listeners). **3. Documentation:** Finalize the **Maintenance Log** in `gemini.md` for long-term stability.
 
+---
+
+## 🧪 RICE-POT: Test Plan Generation Methodology
+
+The BLAST framework extends its output standard for QA documentation with the **RICE-POT** framework (aligned to IEEE 829):
+
+| Letter | Dimension | Description |
+|--------|-----------|-------------|
+| **R** | Requirements | Functional & non-functional requirements derived from source tickets |
+| **I** | Interfaces | All APIs, UI surfaces, data flows, and external integrations |
+| **C** | Components & Integration | System components under test and integration points |
+| **E** | Environment | Test environment matrix, OS/browser coverage, test data strategy |
+| **P** | Procedures | Step-by-step execution procedures, entry/exit criteria, defect lifecycle |
+| **O** | Operations | Team roles, schedule, resource plan, risk register, communication plan |
+| **T** | Traceability | Requirement ↔ test case mapping matrix, coverage metrics, defect linkage |
+
+### Output Standards (v3.0)
+
+BLAST QA generators produce three distinct artifact types:
+
+1. **Test Strategy** — Risk-based 10-section QA approach document. Export: Markdown, JSON.
+2. **Test Plan** — Full RICE-POT IEEE 829 document with all 7 dimensions. Export: PDF, DOCX, Markdown.
+3. **Test Cases** — Jira/Zephyr Scale–compatible detailed cases with 4-8 atomic steps per case, covering: Happy Path, Negative, Boundary, Edge Cases, UI/UX, Security, and Performance scenarios. Export: CSV (Jira bulk import).
+
+### Test Case Quality Standards
+
+Each AI-generated test case MUST:
+- Have a unique ID (TC-001, TC-002, …)
+- Include a precise precondition statement
+- Contain 4-8 atomic action steps (one action per step)
+- Specify exact test data for each step
+- Include a measurable expected result per step
+- Be classified by scenario type and priority
+- Map to a specific component under test
+
+### Behavioral Rules for QA Generation
+
+- **Specificity**: Reference exact field names, button labels, and values from the source ticket
+- **Adversarial Thinking**: Always think like someone trying to break the system
+- **Coverage Distribution**: Minimum 25% Happy Path, 20% Negative, 15% Boundary, 15% Edge, 10% UI/UX, 10% Security, 5% Performance
+- **No Generic Cases**: Each case must be specific to the feature — no copy-paste filler

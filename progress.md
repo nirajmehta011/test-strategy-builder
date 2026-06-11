@@ -69,3 +69,40 @@
 - Groq API account restriction (org-level, not code issue) — mitigated by multi-provider support
 - OpenAI models endpoint requires valid paid API key to list models
 - Gemini free-tier rate limits may apply for heavy usage
+- Test Plan / Test Cases prompts are large — generation takes 45-90s, handled with extended timeouts
+
+## v3.0 – Test Plan + Test Case Generator ✅
+
+### New Features Implemented
+
+- ✅ **3-Mode Generator UI** — `JiraIDInput.tsx` upgraded with mode pill selector (Strategy / Test Plan / Test Cases)
+- ✅ **RICE-POT Test Plan Generator** — `aiService.ts` — comprehensive IEEE 829–aligned test plan prompt (7 dimensions)
+- ✅ **Jira/Zephyr Test Case Generator** — `aiService.ts` — 25+ test cases in structured JSON format, all scenario types
+- ✅ **Output Tabs** — Persistent tabbed display so Strategy, Plan, and Cases all stay independently visible
+- ✅ **TestPlanDisplay.tsx** — Renders full RICE-POT plan with framework banner showing all 7 dimensions
+- ✅ **TestCasesDisplay.tsx** — Full filterable/searchable table with expandable step rows
+  - Statistics bar: Total Cases, Total Steps, Functional, Edge, Security, Boundary
+  - Filter pills: All / Happy Path / Negative / Edge / Boundary / UI-UX / Security / Performance
+  - Sort by: ID / Priority / Type
+  - Expandable rows: Click to reveal all atomic steps with action, test data, expected result
+- ✅ **PDF Export** — Styled PDF with title page, colored RICE-POT section headers, footer with page numbers
+- ✅ **DOCX Export** — Word-compatible document with heading hierarchy via `docx` package
+- ✅ **CSV Export** — Jira bulk import–compatible CSV with all required columns (Summary, Issue Type, Priority, Labels, Test Type, Step, Data, Expected Result)
+- ✅ **Enhanced Empty State** — Shows 3 mode cards describing each generation type and its exports
+- ✅ **B.L.A.S.T.md updated** — RICE-POT methodology table + QA output standards + test case quality rules
+- ✅ **New packages** — `jspdf`, `jspdf-autotable`, `docx`
+- ✅ **Build verified** — `npm run build` exits 0 with 640 modules transformed
+
+### Files Modified
+| File | Change |
+|------|--------|
+| `src/services/aiService.ts` | Added RICE-POT prompt, test cases prompt, 3 generation methods |
+| `src/services/exportService.ts` | Added PDF, DOCX, CSV export functions |
+| `src/components/JiraIDInput.tsx` | 3-mode selector UI |
+| `src/components/TestStrategyPage.tsx` | Multi-mode orchestration, output tabs |
+| `src/components/TestPlanDisplay.tsx` | NEW — RICE-POT plan renderer + export bar |
+| `src/components/TestCasesDisplay.tsx` | NEW — Filterable table + step expansion + CSV export |
+| `src/styles/globals.css` | +530 lines of new component styles |
+| `B.L.A.S.T.md` | RICE-POT methodology documentation |
+| `findings.md` | v3.0 feature list update |
+| `package.json` | New deps: jspdf, jspdf-autotable, docx |
