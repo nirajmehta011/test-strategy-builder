@@ -640,6 +640,48 @@ Test Automation Best Practices to follow:
 Output ONLY the raw JSON object. Start with { and end with }`
 }
 
+const buildExtractTestCasesPrompt = (text: string) => `You are a senior QA architect and test cases extraction specialist.
+Analyze the following raw text content from a uploaded test document (PDF/Manual plan) and extract all test cases.
+
+Raw Document Text:
+${text}
+
+Task:
+Extract all individual test cases described in the text.
+Your output must be a single raw JSON array of test case objects. Do not output any markdown code fences (like \`\`\`json), no text before or after the JSON.
+
+Each object in the JSON array must strictly follow this TypeScript interface:
+{
+  "id": string (e.g. "TC-001", "TC-002", etc.),
+  "summary": string (brief, descriptive title of the test case),
+  "issueType": string (use "Test"),
+  "priority": "Critical" | "High" | "Medium" | "Low",
+  "labels": string (comma-separated labels or tags, if any),
+  "testType": string (e.g. "Functional", "UI", "API", "Security", etc.),
+  "precondition": string (preconditions or setup steps needed before running the test),
+  "steps": [
+    {
+      "stepNumber": number,
+      "action": string (the action to perform),
+      "testData": string (test input data, or "N/A"),
+      "expectedResult": string (expected outcome of the action)
+    }
+  ],
+  "status": string (use "Not Executed"),
+  "component": string (component or module name, if any),
+  "estimatedTime": string (estimated duration, e.g. "15m", "30m"),
+  "scenarioType": "happy_path" | "negative" | "edge_case" | "boundary" | "ui_ux" | "security" | "performance"
+}
+
+Extraction Rules:
+1. Make sure to capture ALL steps for each test case, preserving their sequence.
+2. If step numbers are not explicit, number them starting from 1.
+3. Choose the most appropriate scenarioType based on the test case goal (e.g. security checks -> "security", negative scenarios -> "negative", happy path -> "happy_path").
+4. Assign priority ('Critical', 'High', 'Medium', 'Low') based on severity.
+5. Extract as many test cases as are clearly described in the document.
+
+Output ONLY the raw JSON array. Start with [ and end with ]`
+
 class AIService {
   async fetchModels(provider: AIProvider, apiKey: string): Promise<AIModel[]> {
     try {
@@ -846,6 +888,17 @@ class AIService {
     const parsed = this.parseTestCasesJSON(raw)
     if (parsed.length > 0) return parsed[0]
     throw new Error('Could not parse the custom test case response from the AI.')
+  }
+
+  async extractTestCasesFromText(
+    provider: AIProvider,
+    apiKey: string,
+    model: string,
+    text: string
+  ): Promise<TestCase[]> {
+    const prompt = buildExtractTestCasesPrompt(text)
+    const raw = await this.callAI(provider, apiKey, model, prompt, 120000)
+    return this.parseTestCasesJSON(raw)
   }
 
   async generatePlaywrightTests(

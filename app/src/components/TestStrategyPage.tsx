@@ -170,20 +170,21 @@ export default function TestStrategyPage() {
     }
   }
 
-  const handleAutomateCSV = async (importedCases: TestCase[], fileName: string) => {
+  const handleAutomateFile = async (fileData: { cases?: TestCase[], pdfText?: string }, fileName: string) => {
     setLoading(true)
     setError(null)
-    setCurrentJiraId(`CSV: ${fileName}`)
+    setCurrentJiraId(`File: ${fileName}`)
     setActiveMode('cases')
     setStrategy(null)
     setTestPlan(null)
     setNoMoreCases(false)
+    setPlaywrightData(null)
 
     // Set a mock JIRA issue so that AI prompts can still run with standard context
     const mockIssue = {
-      key: 'CSV',
+      key: 'FILE',
       summary: `Imported Suite: ${fileName}`,
-      description: `Test cases imported directly from CSV file ${fileName}.`,
+      description: `Test cases imported directly from file ${fileName}.`,
       priority: 'Medium',
       status: 'Open',
       created: new Date().toISOString(),
@@ -191,9 +192,6 @@ export default function TestStrategyPage() {
     }
 
     setJiraIssue(mockIssue)
-    setTestCases(importedCases)
-    setViewTab('cases')
-    setPlaywrightData(null)
 
     try {
       const apiKey = getApiKey()
@@ -207,8 +205,24 @@ export default function TestStrategyPage() {
       const prov = settings.ai.provider
       const model = getModel()
 
+      let finalCases: TestCase[] = []
+
+      if (fileData.cases) {
+        finalCases = fileData.cases
+      } else if (fileData.pdfText) {
+        // AI call to parse/extract test cases from raw PDF text
+        finalCases = await aiService.extractTestCasesFromText(prov, apiKey, model, fileData.pdfText)
+      }
+
+      if (finalCases.length === 0) {
+        throw new Error('No valid test cases could be parsed or extracted from the file.')
+      }
+
+      setTestCases(finalCases)
+      setViewTab('cases')
+
       // Call automation directly
-      const data = await aiService.generatePlaywrightTests(prov, apiKey, model, mockIssue, importedCases)
+      const data = await aiService.generatePlaywrightTests(prov, apiKey, model, mockIssue, finalCases)
       setPlaywrightData(data)
       setProviderUsed(prov)
     } catch (err: any) {
@@ -230,7 +244,7 @@ export default function TestStrategyPage() {
     strategy: 'Crafting risk-based test strategy',
     plan: 'Building RICE-POT test plan (this may take ~60s)',
     cases: 'Generating detailed test cases (this may take ~60s)',
-    automate_csv: 'Parsing and automating test cases from CSV (this may take ~60s)'
+    automate_csv: 'Parsing and automating test cases from file (this may take ~90s)'
   }
 
   return (
@@ -244,7 +258,7 @@ export default function TestStrategyPage() {
       </div>
 
       {/* Input */}
-      <JiraIDInput onGenerate={generate} onAutomateCSV={handleAutomateCSV} loading={loading} activeMode={activeMode} />
+      <JiraIDInput onGenerate={generate} onAutomateFile={handleAutomateFile} loading={loading} activeMode={activeMode} />
 
       {/* Error */}
       {error && (
