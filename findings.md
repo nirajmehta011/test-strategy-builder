@@ -50,7 +50,7 @@
 7. **Jira Issue Fetch** — auto-pull summary, description, priority, status.
 8. **3-Mode Generator** — selectable via mode button pills (Strategy / Test Plan / Test Cases).
 9. **Test Strategy Generation** — 10-section risk-based QA strategy in markdown.
-10. **Test Plan Generation (RICE-POT)** — Full IEEE 829 document with all 7 dimensions.
+10. **Test Plan Generation** — Full professional 6-section test plan document.
 11. **Dynamic Test Case Counts** — ticket complexity determines initial test case counts (enforcing at least 10-15 cases initially) instead of a hardcoded 15.
 12. **Incremental Test Case Expansion** — "Add More Test Cases" button generates 5-10 additional test cases (starting at next TC number, e.g. TC-019) and merges them into the table.
 13. **Playwright + TypeScript Automation** — "Automate Test Cases" button generates a full Playwright automation framework with specs for each test case.
@@ -58,7 +58,7 @@
 15. **Adaptive Custom Scenarios** — Detects when standard cases are fully covered, providing a custom scenario input panel where users can type specific workflows to generate new test cases on-demand.
 16. **Interactive Framework Explorer** — View generated configs (`package.json`, `playwright.config.ts`, `tsconfig.json`) and test specs in a tabbed UI code preview.
 17. **Automation Exports** — Download Playwright tests as a detailed markdown file or a ready-to-run ZIP bundle.
-18. **PDF & DOCX Export** — Styled RICE-POT test plan with title page, colored section headers.
+18. **PDF & DOCX Export** — Styled test plan with title page, colored section headers.
 19. **CSV Export (Jira Import)** — Test cases as Jira-bulk-importable CSV with all required columns.
 20. **Test Cases Table** — Filterable by scenario type, searchable, sortable.
 21. **Expandable Test Case Rows** — Click any case to reveal all granular steps inline.

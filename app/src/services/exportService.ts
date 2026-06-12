@@ -89,7 +89,7 @@ export function exportTestPlanAsPDF(content: string, jiraId: string) {
     doc.rect(0, 0, pageW, 12, 'F')
     doc.setFontSize(7)
     doc.setTextColor(140, 145, 165)
-    doc.text('QA NEXUS FRAMEWORK — RICE-POT TEST PLAN', margin, 8)
+    doc.text('QA NEXUS FRAMEWORK — TEST PLAN', margin, 8)
     doc.text(`${jiraId}  |  ${new Date().toLocaleDateString()}`, pageW - margin, 8, { align: 'right' })
   }
 
@@ -113,7 +113,7 @@ export function exportTestPlanAsPDF(content: string, jiraId: string) {
   doc.setFontSize(9)
   doc.setTextColor(139, 92, 246)
   doc.setFont('helvetica', 'bold')
-  doc.text('RICE-POT FRAMEWORK  ·  IEEE 829 COMPLIANT', pageW / 2, 55, { align: 'center' })
+  doc.text('STANDARD QA FRAMEWORK  ·  COMPREHENSIVE TEST PLAN', pageW / 2, 55, { align: 'center' })
 
   doc.setFontSize(28)
   doc.setTextColor(241, 245, 249)
@@ -134,7 +134,7 @@ export function exportTestPlanAsPDF(content: string, jiraId: string) {
   doc.setFontSize(8)
   doc.setTextColor(148, 163, 184)
   doc.text('Document Version: 1.0   |   Status: Draft   |   Classification: Internal', pageW / 2, 138, { align: 'center' })
-  doc.text('Framework: RICE-POT (Requirements · Interfaces · Components · Environment · Procedures · Operations · Traceability)', pageW / 2, 148, { align: 'center', maxWidth: contentW - 60 })
+  doc.text('Framework: Standard 6-Section QA Test Plan (Scope, Strategy, Environment, Criteria, Deliverables, Risks)', pageW / 2, 148, { align: 'center', maxWidth: contentW - 60 })
 
   // Content pages
   doc.addPage()
@@ -255,7 +255,7 @@ export async function exportTestPlanAsDocx(content: string, jiraId: string) {
       spacing: { after: 200 },
     }),
     new Paragraph({
-      children: [new TextRun({ text: 'RICE-POT Framework · IEEE 829 Compliant', color: '8B5CF6', size: 18, italics: true })],
+      children: [new TextRun({ text: 'Standard QA Framework · Comprehensive Test Plan', color: '8B5CF6', size: 18, italics: true })],
       alignment: AlignmentType.CENTER,
       spacing: { after: 800 },
     }),

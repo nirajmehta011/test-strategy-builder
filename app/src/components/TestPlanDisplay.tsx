@@ -8,14 +8,13 @@ interface TestPlanDisplayProps {
   provider: string
 }
 
-const RICE_POT_SECTIONS = [
-  { letter: 'R', label: 'Requirements', color: '#ef4444', desc: 'Functional & non-functional' },
-  { letter: 'I', label: 'Interfaces',   color: '#f97316', desc: 'APIs, UI, integrations' },
-  { letter: 'C', label: 'Components',   color: '#eab308', desc: 'System & integration deps' },
-  { letter: 'E', label: 'Environment',  color: '#22c55e', desc: 'Env matrix & test data' },
-  { letter: 'P', label: 'Procedures',   color: '#06b6d4', desc: 'Entry/exit criteria' },
-  { letter: 'O', label: 'Operations',   color: '#6366f1', desc: 'Team, schedule, risks' },
-  { letter: 'T', label: 'Traceability', color: '#a855f7', desc: 'Requirements ↔ test mapping' },
+const TEST_PLAN_SECTIONS = [
+  { id: '1', label: 'Scope',       color: '#6366f1', desc: 'In-scope & out-of-scope' },
+  { id: '2', label: 'Strategy',    color: '#8b5cf6', desc: 'Test types & justifications' },
+  { id: '3', label: 'Environment', color: '#06b6d4', desc: 'Hardware, software & tools' },
+  { id: '4', label: 'Criteria',    color: '#10b981', desc: 'Entry & exit conditions' },
+  { id: '5', label: 'Deliverables',color: '#f59e0b', desc: 'QA artifacts & severity' },
+  { id: '6', label: 'Risks',       color: '#ef4444', desc: 'Assessments & mitigations' },
 ]
 
 const providerLabels: Record<string, string> = {
@@ -46,16 +45,16 @@ export default function TestPlanDisplay({ content, jiraId, provider }: TestPlanD
 
   return (
     <div className="animate-in">
-      {/* RICE-POT Framework Banner */}
+      {/* Test Plan Framework Banner */}
       <div className="rice-pot-banner">
         <div className="rice-pot-banner-title">
-          <span className="rice-pot-label">RICE-POT</span>
-          <span className="rice-pot-subtitle">IEEE 829 Test Plan Framework</span>
+          <span className="rice-pot-label">PLAN</span>
+          <span className="rice-pot-subtitle">Standard QA Test Plan Framework</span>
         </div>
-        <div className="rice-pot-pills">
-          {RICE_POT_SECTIONS.map(s => (
-            <div key={s.letter} className="rice-pot-pill" style={{ '--pill-color': s.color } as React.CSSProperties}>
-              <span className="rice-pot-pill-letter">{s.letter}</span>
+        <div className="rice-pot-pills" style={{ gridTemplateColumns: 'repeat(6, 1fr)' }}>
+          {TEST_PLAN_SECTIONS.map(s => (
+            <div key={s.id} className="rice-pot-pill" style={{ '--pill-color': s.color } as React.CSSProperties}>
+              <span className="rice-pot-pill-letter">{s.id}</span>
               <div className="rice-pot-pill-info">
                 <span className="rice-pot-pill-name">{s.label}</span>
                 <span className="rice-pot-pill-desc">{s.desc}</span>
@@ -71,7 +70,7 @@ export default function TestPlanDisplay({ content, jiraId, provider }: TestPlanD
           <div className="strategy-card-title">
             📋 {jiraId} – Test Plan
             <span className="strategy-card-badge">{providerLabels[provider] || provider}</span>
-            <span className="strategy-card-badge" style={{ background: 'rgba(168,85,247,0.12)', color: '#a855f7' }}>RICE-POT</span>
+            <span className="strategy-card-badge" style={{ background: 'rgba(168,85,247,0.12)', color: '#a855f7' }}>Professional</span>
           </div>
         </div>
         <div className="strategy-content">

@@ -8,7 +8,7 @@ This directory contains the codebase for the **QA Nexus** single-page applicatio
 
 - **Jira, URL, and Doc Inputs** – Generate QA strategies, plans, and cases from multiple specifications context.
 - **Dynamic Connection Loading** – Secure configuration for Groq, OpenRouter, Gemini, and OpenAI APIs.
-- **RICE-POT Plan & Test Case Filter** – Render and filter IEEE 829 structured documentation in real-time.
+- **Interactive Plan & Test Case Filter** – Render and filter structured documentation in real-time.
 - **POM Automation Engine** – Parse CSV/Excel/PDF test cases client-side and automate them in sequential Playwright TypeScript blocks.
 
 ---
