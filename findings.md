@@ -70,6 +70,7 @@
 27. **Page Object Model Prompt Architecture (v4.4)** — Configured the automation generators to output Playwright test code structured according to the modular Page Object Model (POM) design pattern, featuring global setups, environment configurations, and complete spec files.
 28. **Multi-Input Spec Context & Rebranding (v4.5)** — Rebranded the platform to **QA Nexus** and added support for generating Test Strategies, Test Plans, and Test Cases from Jira issues, Website URLs (via backend proxy scraping), and Specification Documents (.txt, .md, .pdf, .docx, .doc parsed client-side).
 29. **Complete QA Flow Pipeline (v5.0)** — Runs Strategy → Plan → Cases → Playwright POM Automation sequentially from a single click. Displays execution progress using an interactive timeline with steps, durations, and logs, and provides a "Download All QA Assets" ZIP compiler.
+30. **Extended Timeouts & Advanced Principal QA Persona (v5.1)** — Upgraded Axios timeouts to 300000ms (5 mins) across server proxy & React app, configured Vercel serverless functions `maxDuration` to 300s, and introduced an elite Principal QA Automation Engineer prompt to generate 15-30 comprehensive test cases grouped into 7 specific QA buckets.
 
 ## New Dependencies (v4.1)
 | Package | Version | Purpose |

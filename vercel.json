@@ -2,6 +2,11 @@
   "framework": "vite",
   "buildCommand": "cd app && npm install && npm run build",
   "outputDirectory": "app/dist",
+  "functions": {
+    "api/**/*.mjs": {
+      "maxDuration": 300
+    }
+  },
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/index.mjs" },
     { "source": "/(.*)", "destination": "/index.html" }

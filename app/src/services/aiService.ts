@@ -370,8 +370,9 @@ List standards, frameworks, and documentation referenced.
 
 Be exhaustive, specific, and professional. This must be a document a QA director would be proud to present to stakeholders.`
 
-// ─── Test Cases Prompt ────────────────────────────────────────────────────────
-const buildTestCasesPrompt = (jiraIssue: any, testPlan?: string) => `You are a senior QA engineer. Output ONLY a raw JSON array — no markdown, no explanation, no code fences, no text before or after the array.
+const buildTestCasesPrompt = (jiraIssue: any, testPlan?: string) => `You are an elite, Principal QA Automation and Manual Testing Engineer with decades of experience in breaking software, identifying hidden edge cases, and ensuring 100% airtight test coverage.
+
+Your task is to analyze the provided source material (Jira Issue details, and the optional Test Plan below) and generate a comprehensive, production-ready Test Case Specification Document.
 
 Jira Issue: ${jiraIssue.key}
 Summary: ${jiraIssue.summary}
@@ -379,31 +380,37 @@ Description: ${jiraIssue.description}
 Priority: ${jiraIssue.priority}
 ${testPlan ? `\n\n### TEST PLAN CONTEXT:\nUse the following Test Plan to derive and align all your test cases:\n${testPlan}\n` : ''}
 
-Task:
-${testPlan ? `You must analyze the provided Test Plan and think dynamically to generate ALL possible detailed test cases to exhaustively cover every requirement, interface, component, procedure, and scenario defined in the Test Plan. Do not limit yourself to 10-15 cases; generate as many as necessary to guarantee 100% test coverage of the plan details. Ensure every single scenario is covered with crisp and detailed step-by-step actions and expected results.` : `Dynamically determine the number of test cases to generate based on the complexity and depth of the Jira ticket details:
-- CRITICAL RULE: You MUST generate AT LEAST 10 to 15 distinct, detailed test cases. Do not generate only 1-2 cases. If the ticket description is brief, expand on secondary checkpaths, validation requirements, responsiveness, accessibility, security, and edge scenarios to ensure at least 10 high-quality cases are returned.`}
-Ensure all cases are high-quality, non-redundant, and cover various scenario types:
-- happy_path (core workflows)
-- negative (invalid inputs, wrong states)
-- boundary (min/max/null/overflow)
-- edge_case (unusual valid scenarios, race conditions)
-- ui_ux (visual, accessibility, error messages)
-- security (XSS, injection, auth bypass)
-- performance (response time, concurrent load)
+### Instructions & Coverage Requirements:
+You must ensure fair, rigorous, and deep test coverage. Do not summarize or skip sections. You must generate ALL possible detailed test cases to exhaustively cover every requirement, interface, component, procedure, and scenario defined in the Test Plan or Jira Issue. Do not limit yourself to 10-15 cases; generate as many as necessary to guarantee 100% test coverage of the features and plans.
+Ensure that you cover the following categories/buckets:
+1. Happy Path / Positive Test Cases: Standard user journeys where everything works as intended.
+2. Negative Test Cases: Invalid inputs, unauthorized actions, and graceful error handling.
+3. Boundary Value Analysis (BVA) & Equivalence Partitioning: Testing minimum, maximum, just-below, and just-above limits for all inputs/fields.
+4. Edge Cases & Corner Cases: Rare, complex, or multi-condition scenarios (e.g., rapid clicking, session timeouts, network drops mid-transaction, conflicting states).
+5. UI/UX & Accessibility (WCAG): Visual alignment, responsiveness, error message clarity, and basic accessibility.
+6. Security & Permissions: Role-based access control (RBAC), data leaks, and unauthorized URL/API hitting.
+7. Performance: Response times, page weights, loading indicators.
 
+### Execution Strategy:
+- Analyze the input document thoroughly. If details are missing for certain fields, assume standard industry best practices but flag them as "Assumptions Made" in the test case precondition or description.
+- Be specific. Do not use generic steps like "Enter invalid data." Specify *what* invalid data (e.g., "Enter 256 characters into a 50-character limit field").
+- Ensure coverage includes both major functionalities (core workflows) and minor functionalities (tooltips, state persistence, cancel buttons).
+- CRITICAL QUANTITY RULE: Generate AT LEAST 15 to 30 distinct, detailed, and non-redundant test cases. Generate as many as possible to guarantee 100% test coverage.
 
-Each test case MUST follow this EXACT JSON schema. No deviations:
+### Output Format:
+Output ONLY a raw JSON array. Do not wrap the JSON in markdown code blocks or any other formatting. No explanations, no text before or after the array.
+Each test case in the JSON array MUST follow this EXACT JSON schema:
 [
   {
     "id": "TC-001",
     "summary": "Verify [specific action] under [specific condition]",
     "issueType": "Test",
-    "priority": "Critical",
+    "priority": "Critical", // Critical, Major, or Minor (corresponds to Severity)
     "labels": "functional,smoke",
-    "testType": "Functional",
-    "precondition": "User is logged in and on the [Page] page",
-    "scenarioType": "happy_path",
-    "component": "[Component name]",
+    "testType": "Functional", // Functional, UI, Security, Boundary, Negative, etc.
+    "precondition": "User is logged in and on the [Page] page. [Note any 'Assumptions Made' here if details are missing]",
+    "scenarioType": "happy_path", // happy_path, negative, boundary, edge_case, ui_ux, security, performance
+    "component": "[Component name / Module / Feature]",
     "estimatedTime": "10m",
     "steps": [
       {
@@ -417,12 +424,6 @@ Each test case MUST follow this EXACT JSON schema. No deviations:
         "action": "Enter [exact value] in [exact field name]",
         "testData": "[exact test value]",
         "expectedResult": "Field accepts input and shows [exact value]"
-      },
-      {
-        "stepNumber": 3,
-        "action": "Click [exact button label]",
-        "testData": "N/A",
-        "expectedResult": "System [performs action]. [Confirmation/result] is shown."
       }
     ],
     "status": "Not Executed"
@@ -430,8 +431,8 @@ Each test case MUST follow this EXACT JSON schema. No deviations:
 ]
 
 Rules:
-- Be specific to THIS Jira issue — use field names, values, and flows from the description.
-- Each step must be ONE atomic, minor action with expected results. Do not write generic or high-level steps; mention each minor action (e.g. click input, type value, click submit, observe toast message).
+- Be specific to this project — use field names, values, and flows from the description/plan.
+- Each step must be ONE atomic, minor action with expected results. Do not write generic or high-level steps; mention each minor action.
 - testData must be a concrete value or "N/A"
 - expectedResult must be measurable and specific
 - Output the complete JSON array only. Start your response with [ and end with ]`
@@ -732,7 +733,7 @@ class AIService {
     }
   }
 
-  private async callAI(provider: AIProvider, apiKey: string, model: string, prompt: string, timeoutMs = 90000): Promise<string> {
+  private async callAI(provider: AIProvider, apiKey: string, model: string, prompt: string, timeoutMs = 300000): Promise<string> {
     if (!apiKey) throw new Error(`Please configure your ${provider} API key in the settings panel.`)
     if (!model) throw new Error('Please select a model in the settings panel.')
 
@@ -753,17 +754,17 @@ class AIService {
 
   async generateTestStrategy(provider: AIProvider, apiKey: string, model: string, jiraIssue: any): Promise<string> {
     const prompt = buildTestStrategyPrompt(jiraIssue)
-    return this.callAI(provider, apiKey, model, prompt)
+    return this.callAI(provider, apiKey, model, prompt, 300000)
   }
 
   async generateTestPlan(provider: AIProvider, apiKey: string, model: string, jiraIssue: any, testStrategy?: string): Promise<string> {
     const prompt = buildTestPlanPrompt(jiraIssue, testStrategy)
-    return this.callAI(provider, apiKey, model, prompt, 120000)
+    return this.callAI(provider, apiKey, model, prompt, 300000)
   }
 
   async generateTestCases(provider: AIProvider, apiKey: string, model: string, jiraIssue: any, testPlan?: string): Promise<TestCase[]> {
     const prompt = buildTestCasesPrompt(jiraIssue, testPlan)
-    const raw = await this.callAI(provider, apiKey, model, prompt, 120000)
+    const raw = await this.callAI(provider, apiKey, model, prompt, 300000)
 
     return this.parseTestCasesJSON(raw)
   }
@@ -856,7 +857,7 @@ class AIService {
     const startIdIndex = maxNum + 1
 
     const prompt = buildMoreTestCasesPrompt(jiraIssue, existingCases, startIdIndex)
-    const raw = await this.callAI(provider, apiKey, model, prompt, 120000)
+    const raw = await this.callAI(provider, apiKey, model, prompt, 300000)
 
     // Check if the response indicates no more cases
     if (raw.includes('noMoreCases') || raw.includes('"noMoreCases": true')) {
@@ -893,7 +894,7 @@ class AIService {
     const startIdIndex = maxNum + 1
 
     const prompt = buildCustomTestCasePrompt(jiraIssue, existingCases, startIdIndex, customScenario)
-    const raw = await this.callAI(provider, apiKey, model, prompt, 90000)
+    const raw = await this.callAI(provider, apiKey, model, prompt, 300000)
     const parsed = this.parseTestCasesJSON(raw)
     if (parsed.length > 0) return parsed[0]
     throw new Error('Could not parse the custom test case response from the AI.')
@@ -906,7 +907,7 @@ class AIService {
     text: string
   ): Promise<TestCase[]> {
     const prompt = buildExtractTestCasesPrompt(text)
-    const raw = await this.callAI(provider, apiKey, model, prompt, 120000)
+    const raw = await this.callAI(provider, apiKey, model, prompt, 300000)
     return this.parseTestCasesJSON(raw)
   }
 
@@ -936,7 +937,7 @@ class AIService {
     // Generate first batch with the full template configuration
     const firstChunk = chunks[0]
     const firstPrompt = buildAutomatePrompt(jiraIssue, firstChunk)
-    const firstRaw = await this.callAI(provider, apiKey, model, firstPrompt, 150000)
+    const firstRaw = await this.callAI(provider, apiKey, model, firstPrompt, 300000)
     const result = this.parseAutomationJSON(firstRaw)
 
     // Generate subsequent batches in sequence (safer for rate limits than parallel)
@@ -944,7 +945,7 @@ class AIService {
       const chunk = chunks[c]
       const chunkPrompt = buildAutomateChunkPrompt(jiraIssue, chunk)
       try {
-        const chunkRaw = await this.callAI(provider, apiKey, model, chunkPrompt, 150000)
+        const chunkRaw = await this.callAI(provider, apiKey, model, chunkPrompt, 300000)
         const chunkData = this.parseAutomationJSON(chunkRaw)
         if (chunkData.testFiles && chunkData.testFiles.length > 0) {
           result.testFiles.push(...chunkData.testFiles)

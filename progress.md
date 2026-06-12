@@ -231,3 +231,21 @@
 | `findings.md` | Logged v5.0 features |
 | `progress.md` | Logged v5.0 progress |
 
+## v5.1 – Extended Timeout and Advanced QA Test Case Prompt ✅
+
+### New Features Implemented
+- ✅ **Advanced Principal QA Engineer Prompt** — Upgraded `buildTestCasesPrompt` to adopt an elite, Principal QA Automation and Manual Testing Engineer persona with specific coverage requirements (Happy Path, Negative, BVA, Edge Cases, UI/UX, Security & Permissions, Performance) and strict detailed action steps (no generic steps).
+- ✅ **Extended Request Timeout** — Increased Axios timeouts inside `app/server.mjs` and `app/src/services/aiService.ts` from 60 seconds / 2 minutes to 5 minutes (300000ms) to prevent timeout errors when generating extensive test case documents.
+- ✅ **Vercel Serverless Function Max Duration** — Configured `"maxDuration": 300` in both `vercel.json` and `app/vercel.json` to allow Vercel serverless function runs up to 300 seconds.
+
+### Files Modified
+| File | Change |
+|------|--------|
+| `app/server.mjs` | Increased proxy connection timeouts to 300000ms |
+| `app/src/services/aiService.ts` | Upgraded `buildTestCasesPrompt` and callAI default/argument timeouts to 300000ms |
+| `vercel.json` | Configured maxDuration for api/**/*.mjs serverless functions to 300s |
+| `app/vercel.json` | Configured maxDuration for api/**/*.mjs serverless functions to 300s |
+| `findings.md` | Logged v5.1 features |
+| `progress.md` | Logged v5.1 progress |
+
+

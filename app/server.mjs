@@ -110,7 +110,7 @@ app.post('/api/groq/complete', async (req, res) => {
 
     const response = await axios.post('https://api.groq.com/openai/v1/chat/completions',
       { model, messages, temperature: 0.7, max_tokens: 4000 },
-      { headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' }, timeout: 60000 }
+      { headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' }, timeout: 300000 }
     )
     res.json({ success: true, content: response.data.choices[0].message.content })
   } catch (error) {
@@ -156,7 +156,7 @@ app.post('/api/openrouter/complete', async (req, res) => {
           'HTTP-Referer': 'http://localhost:5173',
           'X-Title': 'QA Nexus'
         },
-        timeout: 60000
+        timeout: 300000
       }
     )
     res.json({ success: true, content: response.data.choices[0].message.content })
@@ -203,7 +203,7 @@ app.post('/api/gemini/complete', async (req, res) => {
         contents: [{ role: 'user', parts: [{ text: userMessage }] }],
         generationConfig: { temperature: 0.7, maxOutputTokens: 4000 }
       },
-      { timeout: 60000 }
+      { timeout: 300000 }
     )
     const content = response.data.candidates?.[0]?.content?.parts?.[0]?.text || ''
     res.json({ success: true, content })
@@ -247,7 +247,7 @@ app.post('/api/openai/complete', async (req, res) => {
 
     const response = await axios.post('https://api.openai.com/v1/chat/completions',
       { model, messages, temperature: 0.7, max_tokens: 4000 },
-      { headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' }, timeout: 60000 }
+      { headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' }, timeout: 300000 }
     )
     res.json({ success: true, content: response.data.choices[0].message.content })
   } catch (error) {
