@@ -237,7 +237,7 @@ export function exportTestPlanAsPDF(content: string, jiraId: string) {
 }
 
 // ─── Export Test Plan as DOCX ─────────────────────────────────────────────────
-export async function exportTestPlanAsDocx(content: string, jiraId: string) {
+export async function exportTestPlanAsDocx(content: string, jiraId: string, download = true): Promise<Blob> {
   const sections = parseMarkdownSections(content)
   const children: any[] = []
 
@@ -330,14 +330,17 @@ export async function exportTestPlanAsDocx(content: string, jiraId: string) {
   })
 
   const buffer = await Packer.toBlob(doc)
-  const el = document.createElement('a')
-  el.href = URL.createObjectURL(buffer)
-  el.download = `test-plan-${jiraId}.docx`
-  document.body.appendChild(el); el.click(); document.body.removeChild(el)
+  if (download) {
+    const el = document.createElement('a')
+    el.href = URL.createObjectURL(buffer)
+    el.download = `test-plan-${jiraId}.docx`
+    document.body.appendChild(el); el.click(); document.body.removeChild(el)
+  }
+  return buffer
 }
 
 // ─── Export Test Cases as Jira-Importable CSV ─────────────────────────────────
-export function exportTestCasesAsCSV(testCases: TestCase[], jiraId: string) {
+export function exportTestCasesAsCSV(testCases: TestCase[], jiraId: string, download = true): string {
   const headers = [
     'Summary',
     'Issue Type',
@@ -405,11 +408,14 @@ export function exportTestCasesAsCSV(testCases: TestCase[], jiraId: string) {
   }
 
   const csvContent = rows.join('\n')
-  const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' })
-  const el = document.createElement('a')
-  el.href = URL.createObjectURL(blob)
-  el.download = `test-cases-${jiraId}-jira-import.csv`
-  document.body.appendChild(el); el.click(); document.body.removeChild(el)
+  if (download) {
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' })
+    const el = document.createElement('a')
+    el.href = URL.createObjectURL(blob)
+    el.download = `test-cases-${jiraId}-jira-import.csv`
+    document.body.appendChild(el); el.click(); document.body.removeChild(el)
+  }
+  return csvContent
 }
 
 // ─── Export Playwright Automation Suite as Markdown ───────────────────────────
@@ -433,7 +439,7 @@ export function exportPlaywrightAsMD(data: PlaywrightAutomationData, jiraId: str
 }
 
 // ─── Export Playwright Automation Suite as ZIP ─────────────────────────────────
-export async function exportPlaywrightAsZip(data: PlaywrightAutomationData, jiraId: string) {
+export async function exportPlaywrightAsZip(data: PlaywrightAutomationData, jiraId: string, download = true): Promise<Blob> {
   const zip = new JSZip()
 
   // Base folder name
@@ -453,10 +459,13 @@ export async function exportPlaywrightAsZip(data: PlaywrightAutomationData, jira
   })
 
   const content = await zip.generateAsync({ type: 'blob' })
-  const el = document.createElement('a')
-  el.href = URL.createObjectURL(content)
-  el.download = `${folderName}.zip`
-  document.body.appendChild(el); el.click(); document.body.removeChild(el)
+  if (download) {
+    const el = document.createElement('a')
+    el.href = URL.createObjectURL(content)
+    el.download = `${folderName}.zip`
+    document.body.appendChild(el); el.click(); document.body.removeChild(el)
+  }
+  return content
 }
 
 // ─── Parse CSV back to TestCases ───────────────────────────────────────────────
@@ -707,6 +716,62 @@ export function cleanHTMLToText(html: string): string {
     .replace(/\s+/g, ' ')
     .replace(/\n\s*\n/g, '\n')
     .trim()
+}
+
+// ─── Export All QA Assets as a Single Zip ─────────────────────────────────────
+export async function exportAllAssetsAsZip(
+  jiraId: string,
+  strategy: string | null,
+  testPlan: string | null,
+  testCases: TestCase[] | null,
+  playwrightData: PlaywrightAutomationData | null
+) {
+  const zip = new JSZip()
+  const folderName = `qa-nexus-assets-${jiraId}`
+  const folder = zip.folder(folderName)
+  if (!folder) throw new Error('Failed to create ZIP folder')
+
+  if (strategy) {
+    folder.file(`Test_Strategy_${jiraId}.md`, strategy)
+  }
+  
+  if (testPlan) {
+    folder.file(`Test_Plan_${jiraId}.md`, testPlan)
+    try {
+      const wordBlob = await exportTestPlanAsDocx(testPlan, jiraId, false)
+      folder.file(`Test_Plan_${jiraId}.docx`, wordBlob)
+    } catch (err) {
+      console.error('Failed to include Word doc in workflow zip', err)
+    }
+  }
+
+  if (testCases && testCases.length > 0) {
+    const csvContent = exportTestCasesAsCSV(testCases, jiraId, false)
+    folder.file(`Test_Cases_${jiraId}.csv`, csvContent)
+  }
+
+  if (playwrightData) {
+    try {
+      const pwZip = new JSZip()
+      pwZip.file('README.md', playwrightData.readme)
+      pwZip.file('package.json', playwrightData.packageJson)
+      pwZip.file('tsconfig.json', playwrightData.tsconfigJson)
+      pwZip.file('playwright.config.ts', playwrightData.playwrightConfig)
+      playwrightData.testFiles.forEach(file => {
+        pwZip.file(file.filename, file.code)
+      })
+      const pwZipBlob = await pwZip.generateAsync({ type: 'blob' })
+      folder.file(`Playwright_Automation_Framework_${jiraId}.zip`, pwZipBlob)
+    } catch (err) {
+      console.error('Failed to include Playwright zip in workflow zip', err)
+    }
+  }
+
+  const content = await zip.generateAsync({ type: 'blob' })
+  const el = document.createElement('a')
+  el.href = URL.createObjectURL(content)
+  el.download = `${folderName}.zip`
+  document.body.appendChild(el); el.click(); document.body.removeChild(el)
 }
 
 

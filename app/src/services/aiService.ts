@@ -161,7 +161,7 @@ Measurable completion criteria:
 Format as professional markdown. Be specific to this Jira issue, not generic.`
 
 // ─── RICE-POT Test Plan Prompt ────────────────────────────────────────────────
-const buildTestPlanPrompt = (jiraIssue: any) => `You are a senior QA Lead creating a formal Test Plan document following the RICE-POT methodology and IEEE 829 standard. This is a professional deliverable for stakeholders.
+const buildTestPlanPrompt = (jiraIssue: any, testStrategy?: string) => `You are a senior QA Lead creating a formal Test Plan document following the RICE-POT methodology and IEEE 829 standard. This is a professional deliverable for stakeholders.
 
 Jira Issue: ${jiraIssue.key}
 Summary: ${jiraIssue.summary}
@@ -170,6 +170,7 @@ Priority: ${jiraIssue.priority}
 Status: ${jiraIssue.status}
 Created: ${jiraIssue.created}
 Updated: ${jiraIssue.updated}
+${testStrategy ? `\n\n### STRATEGIC ALIGNMENT:\nUse the following Test Strategy as input context to align your Test Plan:\n${testStrategy}\n` : ''}
 
 Generate a COMPLETE, PROFESSIONAL Test Plan document using the RICE-POT framework. Each section must be thorough and specific to this ticket.
 
@@ -370,12 +371,13 @@ List standards, frameworks, and documentation referenced.
 Be exhaustive, specific, and professional. This must be a document a QA director would be proud to present to stakeholders.`
 
 // ─── Test Cases Prompt ────────────────────────────────────────────────────────
-const buildTestCasesPrompt = (jiraIssue: any) => `You are a senior QA engineer. Output ONLY a raw JSON array — no markdown, no explanation, no code fences, no text before or after the array.
+const buildTestCasesPrompt = (jiraIssue: any, testPlan?: string) => `You are a senior QA engineer. Output ONLY a raw JSON array — no markdown, no explanation, no code fences, no text before or after the array.
 
 Jira Issue: ${jiraIssue.key}
 Summary: ${jiraIssue.summary}
 Description: ${jiraIssue.description}
 Priority: ${jiraIssue.priority}
+${testPlan ? `\n\n### TEST PLAN CONTEXT:\nUse the following Test Plan to derive and align all your test cases:\n${testPlan}\n` : ''}
 
 Task:
 Dynamically determine the number of test cases to generate based on the complexity and depth of the Jira ticket details:
@@ -754,13 +756,13 @@ class AIService {
     return this.callAI(provider, apiKey, model, prompt)
   }
 
-  async generateTestPlan(provider: AIProvider, apiKey: string, model: string, jiraIssue: any): Promise<string> {
-    const prompt = buildTestPlanPrompt(jiraIssue)
+  async generateTestPlan(provider: AIProvider, apiKey: string, model: string, jiraIssue: any, testStrategy?: string): Promise<string> {
+    const prompt = buildTestPlanPrompt(jiraIssue, testStrategy)
     return this.callAI(provider, apiKey, model, prompt, 120000)
   }
 
-  async generateTestCases(provider: AIProvider, apiKey: string, model: string, jiraIssue: any): Promise<TestCase[]> {
-    const prompt = buildTestCasesPrompt(jiraIssue)
+  async generateTestCases(provider: AIProvider, apiKey: string, model: string, jiraIssue: any, testPlan?: string): Promise<TestCase[]> {
+    const prompt = buildTestCasesPrompt(jiraIssue, testPlan)
     const raw = await this.callAI(provider, apiKey, model, prompt, 120000)
 
     return this.parseTestCasesJSON(raw)

@@ -3,7 +3,7 @@ import { useSettings } from '../context/SettingsContext'
 import jiraService from '../services/jiraService'
 import aiService from '../services/aiService'
 import type { TestCase } from '../services/aiService'
-import { exportAsMarkdown, exportAsJSON, copyToClipboard, cleanHTMLToText } from '../services/exportService'
+import { exportAsMarkdown, exportAsJSON, copyToClipboard, cleanHTMLToText, exportAllAssetsAsZip } from '../services/exportService'
 import JiraIDInput, { GenerationInput } from './JiraIDInput'
 import type { GenerationMode } from './JiraIDInput'
 import StrategyDisplay from './StrategyDisplay'
@@ -21,7 +21,8 @@ const SUPPORTED_FEATURES = [
   { id: 'plan', icon: '📋', title: 'Test Plan', desc: 'Full RICE-POT IEEE 829 document · PDF + DOCX export' },
   { id: 'cases', icon: '🧪', title: 'Test Cases', desc: 'Detailed test cases · incremental expansion · custom scenarios · CSV export' },
   { id: 'sources', icon: '🌐', title: 'Multi-Input Sources', desc: 'Jira tickets, Website URLs, or Spec Documents (TXT, MD, PDF, DOCX)' },
-  { id: 'automate', icon: '🤖', title: 'Automate Any Cases', desc: 'Playwright POM automation generated directly from CSV, Excel, or PDF' }
+  { id: 'automate', icon: '🤖', title: 'Automate Any Cases', desc: 'Playwright POM automation generated directly from CSV, Excel, or PDF' },
+  { id: 'workflow', icon: '⚡', title: 'Full QA Flow', desc: 'Execute complete QA lifecycle (Strategy → Plan → Cases → Automation) with one click' }
 ]
 
 export default function TestStrategyPage() {
@@ -43,6 +44,27 @@ export default function TestStrategyPage() {
   const [playwrightData, setPlaywrightData] = useState<any | null>(null)
   const [noMoreCases, setNoMoreCases] = useState(false)
   const [isAddingCustomCase, setIsAddingCustomCase] = useState(false)
+
+  // Workflow progress timeline state
+  const [workflowState, setWorkflowState] = useState<{
+    status: 'idle' | 'running' | 'completed' | 'failed'
+    currentStep: 'strategy' | 'plan' | 'cases' | 'automate' | 'done'
+    steps: {
+      strategy: { status: 'pending' | 'running' | 'completed' | 'failed'; duration?: number }
+      plan: { status: 'pending' | 'running' | 'completed' | 'failed'; duration?: number }
+      cases: { status: 'pending' | 'running' | 'completed' | 'failed'; duration?: number }
+      automate: { status: 'pending' | 'running' | 'completed' | 'failed'; duration?: number }
+    }
+  }>({
+    status: 'idle',
+    currentStep: 'strategy',
+    steps: {
+      strategy: { status: 'pending' },
+      plan: { status: 'pending' },
+      cases: { status: 'pending' },
+      automate: { status: 'pending' }
+    }
+  })
 
 
 
@@ -81,6 +103,16 @@ export default function TestStrategyPage() {
     setTestCases(null)
     setPlaywrightData(null) // reset playwright data on new ticket / regeneration
     setNoMoreCases(false) // reset noMoreCases state
+    setWorkflowState({
+      status: 'idle',
+      currentStep: 'strategy',
+      steps: {
+        strategy: { status: 'pending' },
+        plan: { status: 'pending' },
+        cases: { status: 'pending' },
+        automate: { status: 'pending' }
+      }
+    })
 
     try {
       const apiKey = getApiKey()
@@ -91,86 +123,280 @@ export default function TestStrategyPage() {
         throw new Error(`Please enter your ${names[settings.ai.provider]} API key in the left settings panel.`)
       }
 
-      let fetchedIssue: any = null
-
-      if (input.source === 'jira') {
-        if (!settings.jira.email || !settings.jira.token || !settings.jira.baseUrl) {
-          throw new Error('Please configure your Jira credentials in the left settings panel.')
-        }
-        const jiraId = input.jiraId || ''
-        setCurrentJiraId(jiraId)
-        jiraService.initialize(settings.jira.email, settings.jira.token, settings.jira.baseUrl)
-        fetchedIssue = await jiraService.fetchIssue(jiraId)
-      } else if (input.source === 'url') {
-        const url = input.url || ''
-        setCurrentJiraId(`URL: ${url}`)
-        
-        // Scraping the URL via backend API
-        const response = await fetch(`${API_BASE}/fetch-url`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url })
+      if (mode === 'workflow') {
+        setWorkflowState({
+          status: 'running',
+          currentStep: 'strategy',
+          steps: {
+            strategy: { status: 'running' },
+            plan: { status: 'pending' },
+            cases: { status: 'pending' },
+            automate: { status: 'pending' }
+          }
         })
-        if (!response.ok) {
-          const errData = await response.json()
-          throw new Error(errData.error || 'Failed to fetch/scrape website URL')
-        }
-        const data = await response.json()
-        const cleanedText = cleanHTMLToText(data.html)
 
-        if (!cleanedText) {
-          throw new Error('No readable text content found on the scraped page.')
+        let fetchedIssue: any = null
+
+        if (input.source === 'jira') {
+          if (!settings.jira.email || !settings.jira.token || !settings.jira.baseUrl) {
+            throw new Error('Please configure your Jira credentials in the left settings panel.')
+          }
+          const jiraId = input.jiraId || ''
+          setCurrentJiraId(jiraId)
+          jiraService.initialize(settings.jira.email, settings.jira.token, settings.jira.baseUrl)
+          fetchedIssue = await jiraService.fetchIssue(jiraId)
+        } else if (input.source === 'url') {
+          const url = input.url || ''
+          setCurrentJiraId(`URL: ${url}`)
+          
+          const response = await fetch(`${API_BASE}/fetch-url`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url })
+          })
+          if (!response.ok) {
+            const errData = await response.json()
+            throw new Error(errData.error || 'Failed to fetch/scrape website URL')
+          }
+          const data = await response.json()
+          const cleanedText = cleanHTMLToText(data.html)
+
+          if (!cleanedText) {
+            throw new Error('No readable text content found on the scraped page.')
+          }
+
+          fetchedIssue = {
+            key: 'URL',
+            summary: `Scraped Website: ${url}`,
+            description: `URL: ${url}\n\nWebpage content:\n${cleanedText}`,
+            priority: 'Medium',
+            status: 'Active',
+            created: new Date().toISOString(),
+            updated: new Date().toISOString()
+          }
+        } else if (input.source === 'doc') {
+          const docName = input.docName || 'Uploaded Spec'
+          const docText = input.docText || ''
+          setCurrentJiraId(`Doc: ${docName}`)
+
+          fetchedIssue = {
+            key: 'DOC',
+            summary: `Document: ${docName}`,
+            description: `Document Name: ${docName}\n\nDocument specification content:\n${docText}`,
+            priority: 'Medium',
+            status: 'Active',
+            created: new Date().toISOString(),
+            updated: new Date().toISOString()
+          }
         }
 
-        fetchedIssue = {
-          key: 'URL',
-          summary: `Scraped Website: ${url}`,
-          description: `URL: ${url}\n\nWebpage content:\n${cleanedText}`,
-          priority: 'Medium',
-          status: 'Active',
-          created: new Date().toISOString(),
-          updated: new Date().toISOString()
+        if (!fetchedIssue) {
+          throw new Error('Could not resolve generation input.')
         }
-      } else if (input.source === 'doc') {
-        const docName = input.docName || 'Uploaded Spec'
-        const docText = input.docText || ''
-        setCurrentJiraId(`Doc: ${docName}`)
 
-        fetchedIssue = {
-          key: 'DOC',
-          summary: `Document: ${docName}`,
-          description: `Document Name: ${docName}\n\nDocument specification content:\n${docText}`,
-          priority: 'Medium',
-          status: 'Active',
-          created: new Date().toISOString(),
-          updated: new Date().toISOString()
+        setJiraIssue(fetchedIssue)
+
+        const prov = settings.ai.provider
+        const model = getModel()
+
+        // Step 1: Strategy
+        const startStrategy = Date.now()
+        let stratResult = ''
+        try {
+          stratResult = await aiService.generateTestStrategy(prov, apiKey, model, fetchedIssue)
+          const duration = Math.round((Date.now() - startStrategy) / 1000)
+          setStrategy(stratResult)
+          setWorkflowState(prev => ({
+            ...prev,
+            currentStep: 'plan',
+            steps: {
+              ...prev.steps,
+              strategy: { status: 'completed', duration },
+              plan: { status: 'running' }
+            }
+          }))
+        } catch (err: any) {
+          const duration = Math.round((Date.now() - startStrategy) / 1000)
+          setWorkflowState(prev => ({
+            ...prev,
+            status: 'failed',
+            steps: {
+              ...prev.steps,
+              strategy: { status: 'failed', duration }
+            }
+          }))
+          throw new Error(`[Strategy Builder] ${err.message || 'Generation failed'}`)
         }
+
+        // Step 2: Test Plan
+        const startPlan = Date.now()
+        let planResult = ''
+        try {
+          planResult = await aiService.generateTestPlan(prov, apiKey, model, fetchedIssue, stratResult)
+          const duration = Math.round((Date.now() - startPlan) / 1000)
+          setTestPlan(planResult)
+          setWorkflowState(prev => ({
+            ...prev,
+            currentStep: 'cases',
+            steps: {
+              ...prev.steps,
+              plan: { status: 'completed', duration },
+              cases: { status: 'running' }
+            }
+          }))
+        } catch (err: any) {
+          const duration = Math.round((Date.now() - startPlan) / 1000)
+          setWorkflowState(prev => ({
+            ...prev,
+            status: 'failed',
+            steps: {
+              ...prev.steps,
+              plan: { status: 'failed', duration }
+            }
+          }))
+          throw new Error(`[RICE-POT Test Plan] ${err.message || 'Generation failed'}`)
+        }
+
+        // Step 3: Test Cases
+        const startCases = Date.now()
+        let casesResult: TestCase[] = []
+        try {
+          casesResult = await aiService.generateTestCases(prov, apiKey, model, fetchedIssue, planResult)
+          const duration = Math.round((Date.now() - startCases) / 1000)
+          setTestCases(casesResult)
+          setWorkflowState(prev => ({
+            ...prev,
+            currentStep: 'automate',
+            steps: {
+              ...prev.steps,
+              cases: { status: 'completed', duration },
+              automate: { status: 'running' }
+            }
+          }))
+        } catch (err: any) {
+          const duration = Math.round((Date.now() - startCases) / 1000)
+          setWorkflowState(prev => ({
+            ...prev,
+            status: 'failed',
+            steps: {
+              ...prev.steps,
+              cases: { status: 'failed', duration }
+            }
+          }))
+          throw new Error(`[Test Cases Generator] ${err.message || 'Generation failed'}`)
+        }
+
+        // Step 4: Playwright POM Automation
+        const startAutomate = Date.now()
+        try {
+          const autoResult = await aiService.generatePlaywrightTests(prov, apiKey, model, fetchedIssue, casesResult)
+          const duration = Math.round((Date.now() - startAutomate) / 1000)
+          setPlaywrightData(autoResult)
+          setWorkflowState(prev => ({
+            ...prev,
+            status: 'completed',
+            currentStep: 'done',
+            steps: {
+              ...prev.steps,
+              automate: { status: 'completed', duration }
+            }
+          }))
+          setProviderUsed(prov)
+          setViewTab('strategy')
+        } catch (err: any) {
+          const duration = Math.round((Date.now() - startAutomate) / 1000)
+          setWorkflowState(prev => ({
+            ...prev,
+            status: 'failed',
+            steps: {
+              ...prev.steps,
+              automate: { status: 'failed', duration }
+            }
+          }))
+          throw new Error(`[Playwright POM Automation] ${err.message || 'Automation failed'}`)
+        }
+      } else {
+        let fetchedIssue: any = null
+
+        if (input.source === 'jira') {
+          if (!settings.jira.email || !settings.jira.token || !settings.jira.baseUrl) {
+            throw new Error('Please configure your Jira credentials in the left settings panel.')
+          }
+          const jiraId = input.jiraId || ''
+          setCurrentJiraId(jiraId)
+          jiraService.initialize(settings.jira.email, settings.jira.token, settings.jira.baseUrl)
+          fetchedIssue = await jiraService.fetchIssue(jiraId)
+        } else if (input.source === 'url') {
+          const url = input.url || ''
+          setCurrentJiraId(`URL: ${url}`)
+          
+          // Scraping the URL via backend API
+          const response = await fetch(`${API_BASE}/fetch-url`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url })
+          })
+          if (!response.ok) {
+            const errData = await response.json()
+            throw new Error(errData.error || 'Failed to fetch/scrape website URL')
+          }
+          const data = await response.json()
+          const cleanedText = cleanHTMLToText(data.html)
+
+          if (!cleanedText) {
+            throw new Error('No readable text content found on the scraped page.')
+          }
+
+          fetchedIssue = {
+            key: 'URL',
+            summary: `Scraped Website: ${url}`,
+            description: `URL: ${url}\n\nWebpage content:\n${cleanedText}`,
+            priority: 'Medium',
+            status: 'Active',
+            created: new Date().toISOString(),
+            updated: new Date().toISOString()
+          }
+        } else if (input.source === 'doc') {
+          const docName = input.docName || 'Uploaded Spec'
+          const docText = input.docText || ''
+          setCurrentJiraId(`Doc: ${docName}`)
+
+          fetchedIssue = {
+            key: 'DOC',
+            summary: `Document: ${docName}`,
+            description: `Document Name: ${docName}\n\nDocument specification content:\n${docText}`,
+            priority: 'Medium',
+            status: 'Active',
+            created: new Date().toISOString(),
+            updated: new Date().toISOString()
+          }
+        }
+
+        if (!fetchedIssue) {
+          throw new Error('Could not resolve generation input.')
+        }
+
+        setJiraIssue(fetchedIssue)
+
+        const prov = settings.ai.provider
+        const model = getModel()
+    
+        if (mode === 'strategy') {
+          const result = await aiService.generateTestStrategy(prov, apiKey, model, fetchedIssue)
+          setStrategy(result)
+          setViewTab('strategy')
+        } else if (mode === 'plan') {
+          const result = await aiService.generateTestPlan(prov, apiKey, model, fetchedIssue)
+          setTestPlan(result)
+          setViewTab('plan')
+        } else if (mode === 'cases') {
+          const result = await aiService.generateTestCases(prov, apiKey, model, fetchedIssue)
+          setTestCases(result)
+          setViewTab('cases')
+        }
+    
+        setProviderUsed(prov)
       }
-
-      if (!fetchedIssue) {
-        throw new Error('Could not resolve generation input.')
-      }
-
-      setJiraIssue(fetchedIssue)
-
-      const prov = settings.ai.provider
-      const model = getModel()
- 
-      if (mode === 'strategy') {
-        const result = await aiService.generateTestStrategy(prov, apiKey, model, fetchedIssue)
-        setStrategy(result)
-        setViewTab('strategy')
-      } else if (mode === 'plan') {
-        const result = await aiService.generateTestPlan(prov, apiKey, model, fetchedIssue)
-        setTestPlan(result)
-        setViewTab('plan')
-      } else if (mode === 'cases') {
-        const result = await aiService.generateTestCases(prov, apiKey, model, fetchedIssue)
-        setTestCases(result)
-        setViewTab('cases')
-      }
- 
-      setProviderUsed(prov)
     } catch (err: any) {
       setError(err.message || 'Generation failed. Please try again.')
     } finally {
@@ -310,7 +536,8 @@ export default function TestStrategyPage() {
     strategy: 'Crafting risk-based test strategy',
     plan: 'Building RICE-POT test plan (this may take ~60s)',
     cases: 'Generating detailed test cases (this may take ~60s)',
-    automate_csv: 'Parsing and automating test cases from file (this may take ~90s)'
+    automate_csv: 'Parsing and automating test cases from file (this may take ~90s)',
+    workflow: 'Running complete QA workflow pipeline (this may take ~2-3 mins)'
   }
 
   return (
@@ -335,7 +562,7 @@ export default function TestStrategyPage() {
       )}
 
       {/* Loading */}
-      {loading && (
+      {loading && activeMode !== 'workflow' && (
         <div className="loading-container animate-in">
           <div className="loading-ring" />
           <p className="loading-text">
@@ -345,6 +572,122 @@ export default function TestStrategyPage() {
           <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
             Larger issues may take up to 90 seconds for comprehensive output
           </p>
+        </div>
+      )}
+
+      {/* Workflow Stepper Progress Timeline */}
+      {activeMode === 'workflow' && (loading || workflowState.status !== 'idle') && (
+        <div className="strategy-card animate-in" style={{ marginBottom: 24, padding: '20px 24px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: 12, marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 18 }}>⚡</span>
+              <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)' }}>Full QA Flow Pipeline</span>
+            </div>
+            <span className={`workflow-status-badge ${workflowState.status}`}>
+              {workflowState.status === 'running' && '⏳ Running'}
+              {workflowState.status === 'completed' && '✅ Completed'}
+              {workflowState.status === 'failed' && '❌ Failed'}
+            </span>
+          </div>
+          
+          <div className="workflow-timeline">
+            {/* Step 1: Strategy */}
+            <div className={`workflow-step ${workflowState.steps.strategy.status}`}>
+              <div className="workflow-step-bullet">
+                {workflowState.steps.strategy.status === 'completed' ? '✓' : '1'}
+              </div>
+              <div className="workflow-step-details">
+                <div className="workflow-step-header">
+                  <span className="workflow-step-name">🎯 Test Strategy Builder</span>
+                  {workflowState.steps.strategy.duration !== undefined && (
+                    <span className="workflow-step-time">{workflowState.steps.strategy.duration}s</span>
+                  )}
+                </div>
+                <p className="workflow-step-desc">
+                  {workflowState.steps.strategy.status === 'pending' && 'Pending...'}
+                  {workflowState.steps.strategy.status === 'running' && 'Analyzing input specs & generating risk-based strategy...'}
+                  {workflowState.steps.strategy.status === 'completed' && 'Strategy generation complete.'}
+                  {workflowState.steps.strategy.status === 'failed' && 'Strategy generation failed.'}
+                </p>
+              </div>
+            </div>
+
+            {/* Step 2: Plan */}
+            <div className={`workflow-step ${workflowState.steps.plan.status}`}>
+              <div className="workflow-step-bullet">
+                {workflowState.steps.plan.status === 'completed' ? '✓' : '2'}
+              </div>
+              <div className="workflow-step-details">
+                <div className="workflow-step-header">
+                  <span className="workflow-step-name">📋 RICE-POT Test Plan</span>
+                  {workflowState.steps.plan.duration !== undefined && (
+                    <span className="workflow-step-time">{workflowState.steps.plan.duration}s</span>
+                  )}
+                </div>
+                <p className="workflow-step-desc">
+                  {workflowState.steps.plan.status === 'pending' && 'Waiting for strategy...'}
+                  {workflowState.steps.plan.status === 'running' && 'Aligning strategy details & building RICE-POT IEEE 829 test plan...'}
+                  {workflowState.steps.plan.status === 'completed' && 'RICE-POT test plan complete.'}
+                  {workflowState.steps.plan.status === 'failed' && 'Test plan generation failed.'}
+                </p>
+              </div>
+            </div>
+
+            {/* Step 3: Test Cases */}
+            <div className={`workflow-step ${workflowState.steps.cases.status}`}>
+              <div className="workflow-step-bullet">
+                {workflowState.steps.cases.status === 'completed' ? '✓' : '3'}
+              </div>
+              <div className="workflow-step-details">
+                <div className="workflow-step-header">
+                  <span className="workflow-step-name">🧪 Detailed Test Cases</span>
+                  {workflowState.steps.cases.duration !== undefined && (
+                    <span className="workflow-step-time">{workflowState.steps.cases.duration}s</span>
+                  )}
+                </div>
+                <p className="workflow-step-desc">
+                  {workflowState.steps.cases.status === 'pending' && 'Waiting for test plan...'}
+                  {workflowState.steps.cases.status === 'running' && 'Generating high-quality test cases for all scenarios...'}
+                  {workflowState.steps.cases.status === 'completed' && `Generated ${testCases?.length || 0} detailed test cases.`}
+                  {workflowState.steps.cases.status === 'failed' && 'Test cases generation failed.'}
+                </p>
+              </div>
+            </div>
+
+            {/* Step 4: Automate */}
+            <div className={`workflow-step ${workflowState.steps.automate.status}`}>
+              <div className="workflow-step-bullet">
+                {workflowState.steps.automate.status === 'completed' ? '✓' : '4'}
+              </div>
+              <div className="workflow-step-details">
+                <div className="workflow-step-header">
+                  <span className="workflow-step-name">🤖 Playwright POM Automation</span>
+                  {workflowState.steps.automate.duration !== undefined && (
+                    <span className="workflow-step-time">{workflowState.steps.automate.duration}s</span>
+                  )}
+                </div>
+                <p className="workflow-step-desc">
+                  {workflowState.steps.automate.status === 'pending' && 'Waiting for test cases...'}
+                  {workflowState.steps.automate.status === 'running' && 'Compiling executable Playwright Page Object classes & spec files...'}
+                  {workflowState.steps.automate.status === 'completed' && 'Playwright test automation generation complete.'}
+                  {workflowState.steps.automate.status === 'failed' && 'Playwright automation failed.'}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {workflowState.status === 'completed' && (
+            <div className="workflow-completed-actions animate-in">
+              <span className="workflow-celebrate">🎉 Pipeline Completed! Click on the tabs below to explore all output assets.</span>
+              <button 
+                type="button" 
+                className="btn-export btn-export-accent btn-export-workflow-zip"
+                onClick={() => exportAllAssetsAsZip(currentJiraId, strategy, testPlan, testCases, playwrightData)}
+              >
+                📦 Download All QA Assets (.ZIP)
+              </button>
+            </div>
+          )}
         </div>
       )}
 

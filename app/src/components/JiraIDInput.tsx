@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { TestCase } from '../services/aiService'
 
-export type GenerationMode = 'strategy' | 'plan' | 'cases' | 'automate_csv'
+export type GenerationMode = 'strategy' | 'plan' | 'cases' | 'automate_csv' | 'workflow'
 
 export interface GenerationInput {
   source: 'jira' | 'url' | 'doc'
@@ -23,6 +23,7 @@ const MODES: { id: GenerationMode; icon: string; label: string; sublabel: string
   { id: 'plan',         icon: '📋', label: 'Test Plan',     sublabel: 'RICE-POT framework',      color: '#8b5cf6' },
   { id: 'cases',        icon: '🧪', label: 'Test Cases',    sublabel: 'Jira/Zephyr format',      color: '#06b6d4' },
   { id: 'automate_csv', icon: '🤖', label: 'Automate Any Cases', sublabel: 'Playwright from CSV/Excel/PDF', color: '#10b981' },
+  { id: 'workflow',     icon: '⚡', label: 'Full QA Flow',   sublabel: 'Run complete QA pipeline', color: '#f59e0b' },
 ]
 
 export default function JiraIDInput({ onGenerate, onAutomateFile, loading, activeMode }: JiraIDInputProps) {
@@ -205,7 +206,7 @@ export default function JiraIDInput({ onGenerate, onAutomateFile, loading, activ
   return (
     <div className="jira-input-card">
       {/* Mode Selector */}
-      <div className="mode-selector" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+      <div className="mode-selector" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
         {MODES.map(mode => (
           <button
             key={mode.id}
