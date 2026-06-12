@@ -1,14 +1,14 @@
-# Project Constitution - BLAST Framework
+# Project Constitution - QA Nexus Framework
 
 ## Project Overview
-**Name:** Test Strategy Builder (Jira + Groq Integration)  
-**Framework:** B.L.A.S.T. (Blueprint → Link → Architect → Stylize → Trigger)  
-**Status:** Phase 5 (Trigger) - Ready for Deployment  
+**Name:** QA Nexus Suite (Multi-Input QA Asset Generator)  
+**Methodology:** B.L.A.S.T. (Blueprint → Link → Architect → Stylize → Trigger)  
+**Status:** Phase 5 (Trigger) - Production-Ready  
 **Start Date:** 2026-06-10  
 
 ## Architecture Overview
 - **Frontend:** React 18 SPA with TypeScript, Vite, TailwindCSS
-- **Integrations:** Jira Cloud API, Groq API
+- **Integrations:** Jira Cloud API, Website URL Scraper Proxy, Spec Document parsing (Mammoth.js, PDF.js), Groq/OpenRouter/Gemini/OpenAI APIs
 - **Data Storage:** LocalStorage (browser-side)
 
 ## Tech Stack
@@ -82,8 +82,9 @@
 | Date | Event | Status |
 |------|-------|--------|
 | 2026-06-10 | Phases 0-4 completed | ✅ |
-| 2026-06-10 | Phase 5 documentation | ✅ |
-| — | Ready for deployment | ⏳ |
+| 2026-06-10 | Phase 5 documentation & deployment | ✅ |
+| 2026-06-11 | Playwright POM integration & chunked sequential automation | ✅ |
+| 2026-06-12 | Rebrand to QA Nexus, multi-input context support (URL, Doc) & Mammoth.js integration | ✅ |
 
-**Last Updated:** 2026-06-10  
-**Version:** 1.0.0-rc1
+**Last Updated:** 2026-06-12  
+**Version:** 2.5.0 (Vercel Production)

@@ -68,7 +68,7 @@ You operate within a 3-layer architecture that separates concerns to maximize re
 
 ## 🧪 RICE-POT: Test Plan Generation Methodology
 
-The BLAST framework extends its output standard for QA documentation with the **RICE-POT** framework (aligned to IEEE 829):
+The QA Nexus framework extends its output standard for QA documentation with the **RICE-POT** framework (aligned to IEEE 829):
 
 | Letter | Dimension | Description |
 |--------|-----------|-------------|
@@ -82,7 +82,7 @@ The BLAST framework extends its output standard for QA documentation with the **
 
 ### Output Standards (v4.1)
 
-BLAST QA generators produce four distinct artifact types and support direct file-based workflows:
+QA Nexus generators produce four distinct artifact types and support direct file-based workflows:
 
 1. **Test Strategy** — Risk-based 10-section QA approach document. Export: Markdown, JSON.
 2. **Test Plan** — Full RICE-POT IEEE 829 document with all 7 dimensions. Export: PDF, DOCX, Markdown.

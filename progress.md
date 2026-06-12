@@ -188,3 +188,25 @@
 | File | Change |
 |------|--------|
 | `src/services/aiService.ts` | Updated `buildAutomatePrompt` and `buildAutomateChunkPrompt` to use Page Object Model blueprints. |
+
+## v4.5 – Rebranding to QA Nexus & Multi-Input QA Suite ✅
+
+### New Features Implemented
+- ✅ **Rebranded to QA Nexus** — Rebranded all user-facing names from "BLAST Test Strategy Builder" / "BLAST QA Generator" to "QA Nexus" / "QA Nexus Suite".
+- ✅ **Multi-Input Spec Context** — Extended Strategy, Plan, and Test Cases generators to accept Jira Issue ID, Website URL (scraped via proxy and cleaned), or Spec Document (.txt, .md, .pdf, .docx, .doc) inputs.
+- ✅ **Client-side Docx Parsing** — Dynamic Mammoth.js integration to extract raw text content from uploaded Word docs.
+- ✅ **Dynamic Feature List** — Refactored empty-state cards to render dynamically from a statically defined `SUPPORTED_FEATURES` array, maintaining easy extensibility.
+
+### Files Modified
+| File | Change |
+|------|--------|
+| `src/components/Header.tsx` | Rebranded title and subtitle to QA Nexus |
+| `src/components/LeftPanel.tsx` | Rebranded footer version to QA Nexus |
+| `src/components/TestStrategyPage.tsx` | Rebranded title, implemented URL scraping proxy call, spec document parsing routing, and dynamic empty state feature cards |
+| `src/components/JiraIDInput.tsx` | Redefined onGenerate callback, added input source selection UI, added URL and Doc upload forms, added docx parser |
+| `src/services/exportService.ts` | Added cleanHTMLToText and parseDocxToText helpers, rebranded PDF exports |
+| `src/services/aiService.ts` | Rebranded README template footers |
+| `server.mjs` | Rebranded console logs and OpenRouter headers |
+| `findings.md` | Logged v4.5 features and mammoth.js dependency |
+| `progress.md` | Logged v4.5 progress |
+

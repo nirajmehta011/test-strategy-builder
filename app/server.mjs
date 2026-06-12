@@ -154,7 +154,7 @@ app.post('/api/openrouter/complete', async (req, res) => {
           'Authorization': `Bearer ${apiKey}`,
           'Content-Type': 'application/json',
           'HTTP-Referer': 'http://localhost:5173',
-          'X-Title': 'BLAST Test Strategy Builder'
+          'X-Title': 'QA Nexus'
         },
         timeout: 60000
       }
@@ -266,7 +266,7 @@ app.use((err, req, res, next) => {
 
 if (!process.env.VERCEL) {
   app.listen(PORT, () => {
-    console.log(`\n🚀 BLAST Backend proxy server running on http://localhost:${PORT}`)
+    console.log(`\n🚀 QA Nexus Backend proxy server running on http://localhost:${PORT}`)
     console.log(`📍 Frontend should be running on http://localhost:5173`)
     console.log(`✅ Providers supported: Groq | OpenRouter | Gemini | OpenAI\n`)
   })

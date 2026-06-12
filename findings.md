@@ -68,6 +68,7 @@
 25. **Complete Batch Automation (v4.2)** — Automated test case suites are chunked into batches of 5, preventing Vercel function timeouts and ensuring complete Playwright code is written for every single test case without placeholders.
 26. **Excel & PDF Automation Support (v4.3)** — Extended "Automate Any Cases" to accept Excel (.xlsx, .xls) and PDF (.pdf) files directly. Excel files are parsed client-side via SheetJS, and PDFs are parsed via client-side PDF.js followed by AI-driven test case extraction.
 27. **Page Object Model Prompt Architecture (v4.4)** — Configured the automation generators to output Playwright test code structured according to the modular Page Object Model (POM) design pattern, featuring global setups, environment configurations, and complete spec files.
+28. **Multi-Input Spec Context & Rebranding (v4.5)** — Rebranded the platform to **QA Nexus** and added support for generating Test Strategies, Test Plans, and Test Cases from Jira issues, Website URLs (via backend proxy scraping), and Specification Documents (.txt, .md, .pdf, .docx, .doc parsed client-side).
 
 ## New Dependencies (v4.1)
 | Package | Version | Purpose |
@@ -76,6 +77,7 @@
 | `jspdf-autotable` | ^3.x | Table support in PDF |
 | `docx` | ^9.x | Word DOCX generation |
 | `jszip` | ^3.x | Client-side ZIP file generation |
+| `mammoth` | ^1.6.0 | Client-side Word .docx to plain text parser |
 
 
 
