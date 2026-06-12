@@ -66,25 +66,26 @@ You operate within a 3-layer architecture that separates concerns to maximize re
 
 ---
 
-## 🧪 Test Plan Generation Methodology
+## 🧪 RICE-POT: Test Plan Generation Methodology
 
-The QA Nexus framework extends its output standard for QA documentation with the standard 6-section test plan methodology:
+The QA Nexus framework extends its output standard for QA documentation with the **RICE-POT** framework (aligned to IEEE 829):
 
-| Section | Dimension | Description |
-|---------|-----------|-------------|
-| **1** | Objectives & Scope | In-Scope vs. Out-of-Scope definitions derived from specs |
-| **2** | Test Strategy & Types | Functional, Integration, Regression, Security, Performance, UI/UX justifications |
-| **3** | Environment & Tools | Recommended hardware, software platforms, and test execution tools |
-| **4** | Entry & Exit Criteria | Quality gate conditions to start, pause, resume, and sign off/deploy |
-| **5** | Deliverables & Defect Management | QA outputs and standard defect severity/priority classifications |
-| **6** | Risks & Mitigation | Potential project bottlenecks, resource risks, and mitigations |
+| Letter | Dimension | Description |
+|--------|-----------|-------------|
+| **R** | Requirements | Functional & non-functional requirements derived from source tickets |
+| **I** | Interfaces | All APIs, UI surfaces, data flows, and external integrations |
+| **C** | Components & Integration | System components under test and integration points |
+| **E** | Environment | Test environment matrix, OS/browser coverage, test data strategy |
+| **P** | Procedures | Step-by-step execution procedures, entry/exit criteria, defect lifecycle |
+| **O** | Operations | Team roles, schedule, resource plan, risk register, communication plan |
+| **T** | Traceability | Requirement ↔ test case mapping matrix, coverage metrics, defect linkage |
 
 ### Output Standards (v4.1)
 
 QA Nexus generators produce four distinct artifact types and support direct file-based workflows:
 
 1. **Test Strategy** — Risk-based 10-section QA approach document. Export: Markdown, JSON.
-2. **Test Plan** — Full professional 6-section test plan document. Export: PDF, DOCX, Markdown.
+2. **Test Plan** — Full RICE-POT IEEE 829 document with all 7 dimensions. Export: PDF, DOCX, Markdown.
 3. **Test Cases** — Jira/Zephyr Scale–compatible detailed cases, dynamically sized based on ticket complexity (enforcing at least 10-15 cases initially).
    - **Incremental Expansion**: Ability to think and append 5-10 additional cases sequentially (TC-019+) without duplicating existing ones.
    - **Custom Scenario Addition**: If all possible standard cases are covered, the user can describe specific workflows or boundary conditions to generate custom test cases dynamically.

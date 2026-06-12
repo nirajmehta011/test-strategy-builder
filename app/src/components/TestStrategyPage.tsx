@@ -18,7 +18,7 @@ const API_BASE = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' 
 
 const SUPPORTED_FEATURES = [
   { id: 'strategy', icon: '🎯', title: 'Test Strategy', desc: '10-section risk-based QA approach · Markdown/JSON export' },
-  { id: 'plan', icon: '📋', title: 'Test Plan', desc: '6-section professional test plan · PDF + DOCX export' },
+  { id: 'plan', icon: '📋', title: 'Test Plan', desc: 'Full RICE-POT IEEE 829 document · PDF + DOCX export' },
   { id: 'cases', icon: '🧪', title: 'Test Cases', desc: 'Detailed test cases · incremental expansion · custom scenarios · CSV export' },
   { id: 'sources', icon: '🌐', title: 'Multi-Input Sources', desc: 'Jira tickets, Website URLs, or Spec Documents (TXT, MD, PDF, DOCX)' },
   { id: 'automate', icon: '🤖', title: 'Automate Any Cases', desc: 'Playwright POM automation generated directly from CSV, Excel, or PDF' }
@@ -308,7 +308,7 @@ export default function TestStrategyPage() {
 
   const loadingMessages: Record<GenerationMode, string> = {
     strategy: 'Crafting risk-based test strategy',
-    plan: 'Building professional test plan (this may take ~60s)',
+    plan: 'Building RICE-POT test plan (this may take ~60s)',
     cases: 'Generating detailed test cases (this may take ~60s)',
     automate_csv: 'Parsing and automating test cases from file (this may take ~90s)'
   }
@@ -319,7 +319,7 @@ export default function TestStrategyPage() {
       <div className="page-header">
         <h1 className="page-title">QA Nexus Suite</h1>
         <p className="page-subtitle">
-          Generate comprehensive Test Strategies, Test Plans, and Jira/Zephyr Test Cases from Jira tickets, Web URLs, or Specification Documents
+          Generate comprehensive Test Strategies, RICE-POT Test Plans, and Jira/Zephyr Test Cases from Jira tickets, Web URLs, or Specification Documents
         </p>
       </div>
 

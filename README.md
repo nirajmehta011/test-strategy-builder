@@ -1,6 +1,6 @@
 # QA Nexus Suite
 
-QA Nexus Suite is an advanced, AI-powered QA generation platform that builds premium test assets (Risk-Based Test Strategies, 6-Section Professional Test Plans, and Jira/Zephyr-compatible Test Cases) from multiple input contexts and automatically produces modular Page Object Model (POM) Playwright TypeScript test automation suites.
+QA Nexus Suite is an advanced, AI-powered QA generation platform that builds premium test assets (Risk-Based Test Strategies, RICE-POT IEEE 829 Test Plans, and Jira/Zephyr-compatible Test Cases) from multiple input contexts and automatically produces modular Page Object Model (POM) Playwright TypeScript test automation suites.
 
 ---
 
@@ -14,7 +14,7 @@ Generate comprehensive QA documentation from:
 
 ### 2. Output Generation Modules
 * 🎯 **Test Strategy** – Generates a 10-section risk-based QA strategy (Markdown/JSON exports).
-* 📋 **Test Plan** – Generates a complete 6-section professional test plan with structured section styles (PDF + DOCX exports).
+* 📋 **Test Plan** – Generates a complete RICE-POT IEEE 829 test plan with structured section styles (PDF + DOCX exports).
 * 🧪 **Test Cases** – Generates structured Jira/Zephyr test cases with incremental sequential expansion ("Add More Cases") and interactive custom scenarios if all standard paths are covered (CSV export for Jira Bulk Import).
 
 ### 3. Playwright TS POM Automation ("Automate Any Cases")
@@ -51,7 +51,7 @@ QA Nexus is built as a lightweight, glassmorphic single-page application (React 
 ├── findings.md           # Research, discoveries, and versions
 ├── gemini.md             # Project Constitution & Maintenance Log
 ├── progress.md           # Implementation progress log
-└── B.L.A.S.T.md          # QA Nexus standards and QA guidelines
+└── B.L.A.S.T.md          # RICE-POT standards and QA guidelines
 ```
 
 ---

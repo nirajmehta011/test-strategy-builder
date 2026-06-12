@@ -161,39 +161,213 @@ Measurable completion criteria:
 Format as professional markdown. Be specific to this Jira issue, not generic.`
 
 // ─── RICE-POT Test Plan Prompt ────────────────────────────────────────────────
-const buildTestPlanPrompt = (jiraIssue: any) => `Act as an expert QA Lead and Software Test Architect. I need you to generate a comprehensive, professional Test Plan.
+const buildTestPlanPrompt = (jiraIssue: any) => `You are a senior QA Lead creating a formal Test Plan document following the RICE-POT methodology and IEEE 829 standard. This is a professional deliverable for stakeholders.
 
-Here is the context for the project:
-- Project Name: ${jiraIssue.key} – ${jiraIssue.summary}
-- Core Features to Test: ${jiraIssue.summary} (and related sub-features described below)
-- Target Platforms/OS: Web (Chrome, Safari, Firefox, Edge) and Mobile (iOS, Android) if applicable
-- Tech Stack: Modern Web/Mobile stack (React, Node.js, databases, cloud, etc., as applicable to the description)
-- Known Constraints/Risks: Priority: ${jiraIssue.priority}. Constraints and dependencies defined in the description.
+Jira Issue: ${jiraIssue.key}
+Summary: ${jiraIssue.summary}
+Description: ${jiraIssue.description}
+Priority: ${jiraIssue.priority}
+Status: ${jiraIssue.status}
+Created: ${jiraIssue.created}
+Updated: ${jiraIssue.updated}
 
-Here is the detailed specification content/description to analyze:
-${jiraIssue.description}
+Generate a COMPLETE, PROFESSIONAL Test Plan document using the RICE-POT framework. Each section must be thorough and specific to this ticket.
 
-Please structure the Test Plan using the following clear sections:
+---
 
-# 1. OBJECTIVES & SCOPE
-- Explicitly state what is In-Scope and what is Out-of-Scope based on the features provided.
+# TEST PLAN: ${jiraIssue.key} – ${jiraIssue.summary}
 
-# 2. TEST STRATEGY & TYPES
-- Define the types of testing required (e.g., Functional, Integration, Regression, Security, Performance, UI/UX) and why they apply to this project.
+**Document Version:** 1.0  
+**Status:** Draft  
+**Prepared By:** QA Team  
+**Date:** ${new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}
 
-# 3. TEST ENVIRONMENT & TOOLS
-- Detail the hardware, software, and testing tools (e.g., Jira, Playwright, Cypress, Selenium, Postman, JMeter) recommended for this setup.
+---
 
-# 4. ENTRY & EXIT CRITERIA
-- Define exact conditions required to start testing and the benchmarks required to sign off/deploy.
+## R – REQUIREMENTS
 
-# 5. DELIVERABLES & DEFECT MANAGEMENT
-- Outline what the QA team will deliver (Test cases, Bug reports, Summary report) and a standard defect severity/priority scale.
+### 1.1 Objective
+State the primary objective of this test plan and what business value the testing delivers.
 
-# 6. RISK ASSESSMENT & MITIGATION
-- Identify 2-3 potential testing risks specific to this project and how to mitigate them.
+### 1.2 Functional Requirements to be Tested
+List EVERY functional requirement derived from the Jira ticket with a unique ID (FR-001, FR-002...).
 
-Format the output using clear Markdown headings (use Level 1 # for main sections, and Level 2 ## for sub-sections), bullet points, and tables where appropriate to ensure it is highly scannable and ready to be dropped into Confluence or Jira. Do not use placeholders; all details must be written out fully.`
+### 1.3 Non-Functional Requirements
+List all non-functional requirements (performance SLAs, accessibility standards, security requirements, compatibility requirements).
+
+### 1.4 Regulatory & Compliance Requirements
+Note any compliance standards applicable (GDPR, WCAG 2.1, ISO 27001, etc.).
+
+---
+
+## I – INTERFACES
+
+### 2.1 User Interfaces
+Describe all UI screens, pages, and components involved. List input fields, controls, and visual elements to test.
+
+### 2.2 API Interfaces
+List all REST/GraphQL endpoints, request/response schemas, authentication mechanisms, and rate limits.
+
+### 2.3 Data Interfaces
+Database interactions, file imports/exports, third-party data feeds.
+
+### 2.4 External System Integrations
+All third-party services, webhooks, event buses, or external APIs.
+
+---
+
+## C – COMPONENTS & INTEGRATION
+
+### 3.1 System Components Under Test
+List each software component, microservice, or module being tested.
+
+### 3.2 Integration Points & Dependencies
+Map the component interaction diagram in text. Identify critical integration paths.
+
+### 3.3 Integration Test Strategy
+How integration between components will be validated (top-down, bottom-up, big-bang, sandwich).
+
+### 3.4 Out-of-Scope Components
+Explicitly state what is NOT being tested and justify why.
+
+---
+
+## E – ENVIRONMENT
+
+### 4.1 Test Environment Specifications
+
+| Environment | Purpose | URL/Location | Owner |
+|-------------|---------|-------------|-------|
+| Development | Unit/Component testing | ... | Dev Team |
+| QA/Test | Functional testing | ... | QA Team |
+| Staging | Pre-release validation | ... | DevOps |
+| Production | Smoke testing only | ... | QA Lead |
+
+### 4.2 Hardware Requirements
+Minimum/recommended specs for test execution.
+
+### 4.3 Browser & OS Coverage Matrix
+
+| Browser | Version | OS | Priority |
+|---------|---------|-----|---------|
+List all required combinations.
+
+### 4.4 Test Data Requirements
+- Types of test data needed
+- Test data creation/generation strategy
+- Sensitive data masking requirements
+- Data volume requirements for performance tests
+
+### 4.5 Tools & Infrastructure
+- Test management tool (Jira/Zephyr)
+- Automation framework
+- CI/CD pipeline integration
+- Monitoring and logging tools
+
+---
+
+## P – PROCEDURES
+
+### 5.1 Test Execution Approach
+Describe the step-by-step test execution workflow from start to finish.
+
+### 5.2 Test Design Techniques
+- Equivalence Partitioning analysis for this feature
+- Boundary Value Analysis examples
+- Decision Table testing scenarios
+- State Transition testing (if applicable)
+- Use Case / User Story testing
+
+### 5.3 Entry Criteria
+**Testing CANNOT begin until ALL of the following are met:**
+List 8-12 specific, measurable entry criteria with responsible party.
+
+### 5.4 Exit Criteria
+**Testing is COMPLETE when ALL of the following are satisfied:**
+List 8-12 specific, measurable exit criteria with acceptance thresholds.
+
+### 5.5 Suspension & Resumption Criteria
+Define when testing should be suspended (blocking defects, environment failure) and how it resumes.
+
+### 5.6 Defect Management Process
+- Defect severity/priority classification table
+- Defect lifecycle (Open → Assigned → In Progress → Fixed → Verified → Closed)
+- SLA for defect resolution by severity
+- Escalation path
+
+---
+
+## O – OPERATIONS
+
+### 6.1 Team & Responsibilities
+
+| Role | Name/Team | Responsibilities |
+|------|-----------|-----------------|
+List all roles involved in testing with specific responsibilities.
+
+### 6.2 Test Schedule & Milestones
+
+| Phase | Activity | Duration | Start | End |
+|-------|---------|---------|-------|-----|
+List testing phases with realistic time estimates.
+
+### 6.3 Resource Requirements
+- QA engineers needed (number, skill level)
+- Infrastructure/environment costs
+- Tooling licenses
+
+### 6.4 Risk Register
+
+| ID | Risk | Probability | Impact | Mitigation | Owner |
+|----|------|------------|--------|-----------|-------|
+List 8-12 specific risks with mitigation strategies.
+
+### 6.5 Communication Plan
+- Daily standup reporting
+- Defect review cadence
+- Status reporting to stakeholders
+- Go/No-Go decision criteria
+
+---
+
+## T – TRACEABILITY
+
+### 7.1 Requirements Traceability Matrix
+
+| Req ID | Requirement | Test Scenario ID | Test Case Count | Coverage % |
+|--------|------------|-----------------|----------------|-----------|
+Map every requirement (FR-001, etc.) to test scenarios.
+
+### 7.2 Risk-Based Test Coverage
+Show which risks are covered by which test scenarios.
+
+### 7.3 Defect Traceability
+How defects will be linked back to requirements and test cases.
+
+### 7.4 Metrics & KPIs
+- Test execution rate targets
+- Pass/fail ratio thresholds
+- Defect density acceptable levels
+- Test coverage percentage goals
+
+---
+
+## APPENDIX
+
+### A. Glossary
+Define 10+ key terms used in this test plan.
+
+### B. References
+List standards, frameworks, and documentation referenced.
+
+### C. Revision History
+
+| Version | Date | Author | Changes |
+|---------|------|--------|---------|
+
+---
+
+Be exhaustive, specific, and professional. This must be a document a QA director would be proud to present to stakeholders.`
 
 // ─── Test Cases Prompt ────────────────────────────────────────────────────────
 const buildTestCasesPrompt = (jiraIssue: any) => `You are a senior QA engineer. Output ONLY a raw JSON array — no markdown, no explanation, no code fences, no text before or after the array.

@@ -20,7 +20,7 @@ interface JiraIDInputProps {
 
 const MODES: { id: GenerationMode; icon: string; label: string; sublabel: string; color: string }[] = [
   { id: 'strategy',     icon: '🎯', label: 'Test Strategy', sublabel: 'Risk-based QA approach', color: '#6366f1' },
-  { id: 'plan',         icon: '📋', label: 'Test Plan',     sublabel: '6-section framework',      color: '#8b5cf6' },
+  { id: 'plan',         icon: '📋', label: 'Test Plan',     sublabel: 'RICE-POT framework',      color: '#8b5cf6' },
   { id: 'cases',        icon: '🧪', label: 'Test Cases',    sublabel: 'Jira/Zephyr format',      color: '#06b6d4' },
   { id: 'automate_csv', icon: '🤖', label: 'Automate Any Cases', sublabel: 'Playwright from CSV/Excel/PDF', color: '#10b981' },
 ]
