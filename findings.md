@@ -40,7 +40,7 @@
 | **Gemini** | generativelanguage.googleapis.com | ✅ Yes | `AIza...` |
 | **OpenAI** | api.openai.com | ❌ Paid | `sk-...` |
 
-## Core Features (v4.1)
+## Core Features (v5.0)
 1. **Persistent Left-Pane Settings** — always visible, collapsible sections.
 2. **Multi-provider AI** — Groq, OpenRouter, Gemini, OpenAI switchable via provider pills.
 3. **Live Model Loading** — fetches real model lists from each provider on test.
@@ -69,6 +69,7 @@
 26. **Excel & PDF Automation Support (v4.3)** — Extended "Automate Any Cases" to accept Excel (.xlsx, .xls) and PDF (.pdf) files directly. Excel files are parsed client-side via SheetJS, and PDFs are parsed via client-side PDF.js followed by AI-driven test case extraction.
 27. **Page Object Model Prompt Architecture (v4.4)** — Configured the automation generators to output Playwright test code structured according to the modular Page Object Model (POM) design pattern, featuring global setups, environment configurations, and complete spec files.
 28. **Multi-Input Spec Context & Rebranding (v4.5)** — Rebranded the platform to **QA Nexus** and added support for generating Test Strategies, Test Plans, and Test Cases from Jira issues, Website URLs (via backend proxy scraping), and Specification Documents (.txt, .md, .pdf, .docx, .doc parsed client-side).
+29. **Complete QA Flow Pipeline (v5.0)** — Runs Strategy → Plan → Cases → Playwright POM Automation sequentially from a single click. Displays execution progress using an interactive timeline with steps, durations, and logs, and provides a "Download All QA Assets" ZIP compiler.
 
 ## New Dependencies (v4.1)
 | Package | Version | Purpose |

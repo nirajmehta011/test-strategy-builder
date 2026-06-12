@@ -210,3 +210,22 @@
 | `findings.md` | Logged v4.5 features and mammoth.js dependency |
 | `progress.md` | Logged v4.5 progress |
 
+## v5.0 – Complete QA Workflow Pipeline ✅
+
+### New Features Implemented
+- ✅ **Sequential Execution Engine** — Chained generators sequentially in a single automated flow (Strategy → Plan → Cases → Playwright POM Automation) with optional parent context injection.
+- ✅ **Interactive Timeline Stepper UI** — Created a live timeline showing execution status (Pending, Running, Completed, Failed) and elapsed execution times in seconds for each phase.
+- ✅ **Download All ZIP Bundle** — Compiled Strategy, Markdown/Word Plans, Cases CSV, and Playwright framework ZIP into a single master archive `qa-nexus-assets-[JiraID].zip`.
+- ✅ **Tabbed Results Sync** — Automatically populate Strategy, Plan, and Cases tabs upon workflow completion so users can review individual items directly.
+
+### Files Modified
+| File | Change |
+|------|--------|
+| `src/services/aiService.ts` | Prompt context chaining (`testStrategy` in plan prompt, `testPlan` in cases prompt) |
+| `src/services/exportService.ts` | Upgraded DOCX, CSV, and ZIP download flags, added `exportAllAssetsAsZip` builder |
+| `src/components/JiraIDInput.tsx` | Added `workflow` mode, responsive `repeat(auto-fit, minmax(180px, 1fr))` grid styling |
+| `src/components/TestStrategyPage.tsx` | Implemented sequential generation loop, status stepper component, and zip handler |
+| `src/styles/globals.css` | Added styles for timeline track, bullet nodes, pulsing indicators, and status badges |
+| `findings.md` | Logged v5.0 features |
+| `progress.md` | Logged v5.0 progress |
+
