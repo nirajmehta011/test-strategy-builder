@@ -319,12 +319,12 @@ export default function TestCasesDisplay({
 
       {/* No More Cases Warning & Custom Scenario Input */}
       {noMoreCases && (
-        <div className="no-more-cases-alert animate-in" style={{ marginTop: 20, padding: 16, borderRadius: 8, background: 'rgba(234, 179, 8, 0.04)', border: '1px solid rgba(234, 179, 8, 0.18)', textAlign: 'left' }}>
+        <div className="no-more-cases-alert animate-in" style={{ marginTop: 20, padding: 16, borderRadius: 8, background: 'rgba(234, 179, 8, 0.06)', border: '1px solid rgba(234, 179, 8, 0.25)', textAlign: 'left' }}>
           <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 12 }}>
             <span style={{ fontSize: 20 }}>✨</span>
             <div>
-              <h4 style={{ margin: 0, fontSize: 13, fontWeight: 'bold', color: '#eab308' }}>All Standard Scenarios Covered</h4>
-              <p style={{ margin: '2px 0 0 0', fontSize: 11, color: 'var(--text-muted)' }}>The QA Nexus AI framework indicates all key ticket flows are covered. If you have a specific scenario you would like to test, describe it below to generate a new detailed case.</p>
+              <h4 style={{ margin: 0, fontSize: 13, fontWeight: 'bold', color: '#d97706' }}>All Standard Scenarios Covered</h4>
+              <p style={{ margin: '2px 0 0 0', fontSize: 11, color: 'var(--text-secondary)' }}>The QA Nexus AI framework indicates all key ticket flows are covered. If you have a specific scenario you would like to test, describe it below to generate a new detailed case.</p>
             </div>
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
@@ -356,7 +356,7 @@ export default function TestCasesDisplay({
       )}
 
       {/* QA Actions and Automation Panel */}
-      <div className="qa-actions-panel" style={{ marginTop: 24, padding: 16, borderRadius: 8, background: 'rgba(30, 41, 59, 0.4)', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+      <div className="qa-actions-panel" style={{ marginTop: 24, padding: 16, borderRadius: 8, background: 'var(--bg-surface-2)', border: '1px solid var(--border)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
           <div style={{ textAlign: 'left' }}>
             <h3 style={{ margin: 0, fontSize: 14, fontWeight: 'bold', color: 'var(--text-primary)' }}>🛠️ QA Actions & Expansion</h3>
@@ -397,8 +397,8 @@ export default function TestCasesDisplay({
 
       {/* Playwright Automation Section */}
       {playwrightData && (
-        <div className="playwright-automation-card animate-in" style={{ marginTop: 24, padding: 16, borderRadius: 8, background: 'rgba(15, 23, 42, 0.4)', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
-          <div className="playwright-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: 12, marginBottom: 12 }}>
+        <div className="playwright-automation-card animate-in" style={{ marginTop: 24, padding: 16, borderRadius: 8, background: 'var(--bg-surface-2)', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+          <div className="playwright-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, borderBottom: '1px solid var(--border)', paddingBottom: 12, marginBottom: 12 }}>
             <div style={{ textAlign: 'left' }}>
               <h3 style={{ margin: 0, fontSize: 15, fontWeight: 'bold', color: '#10b981' }}>🎭 Playwright TypeScript Automation Framework</h3>
               <p style={{ margin: '2px 0 0 0', fontSize: 12, color: 'var(--text-muted)' }}>Configure, extract, and import directly to VS Code or any IDE</p>
@@ -454,14 +454,14 @@ export default function TestCasesDisplay({
             })}
           </div>
 
-          <div className="playwright-code-preview" style={{ background: '#090d16', borderRadius: 6, border: '1px solid rgba(255,255,255,0.06)', padding: 16, position: 'relative' }}>
+          <div className="playwright-code-preview" style={{ background: 'var(--bg-surface)', borderRadius: 6, border: '1px solid var(--border)', padding: 16, position: 'relative' }}>
             <button
               onClick={handleCopyCode}
-              style={{ position: 'absolute', top: 8, right: 8, padding: '4px 8px', fontSize: 11, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-secondary)', borderRadius: 4, cursor: 'pointer' }}
+              style={{ position: 'absolute', top: 8, right: 8, padding: '4px 8px', fontSize: 11, background: 'var(--bg-surface-2)', border: '1px solid var(--border)', color: 'var(--text-secondary)', borderRadius: 4, cursor: 'pointer' }}
             >
               {copiedCode ? '✅ Copied!' : '📋 Copy Code'}
             </button>
-            <pre style={{ margin: 0, maxHeight: 400, overflowY: 'auto', fontSize: 13, fontFamily: 'monospace', color: '#e2e8f0', textAlign: 'left', whiteSpace: 'pre-wrap' }}>
+            <pre style={{ margin: 0, maxHeight: 400, overflowY: 'auto', fontSize: 13, fontFamily: 'monospace', color: 'var(--text-primary)', textAlign: 'left', whiteSpace: 'pre-wrap' }}>
               <code>{getCodeToDisplay()}</code>
             </pre>
           </div>

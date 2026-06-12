@@ -1034,8 +1034,8 @@ body {
 
 /* Playwright Automation Styles */
 .pw-tab-btn {
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.08);
+  background: var(--bg-surface-2);
+  border: 1px solid var(--border);
   color: var(--text-secondary);
   padding: 6px 12px;
   border-radius: 6px;
@@ -1046,14 +1046,14 @@ body {
   white-space: nowrap;
 }
 .pw-tab-btn:hover {
-  background: rgba(255,255,255,0.08);
-  color: #fff;
+  background: var(--accent-light);
+  color: var(--accent);
 }
 .pw-tab-btn.active {
-  background: rgba(16,185,129,0.15);
+  background: rgba(16, 185, 129, 0.12);
   border-color: #10b981;
   color: #10b981;
-  box-shadow: 0 0 10px rgba(16,185,129,0.15);
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.1);
 }
 
 .loading-ring-small {
