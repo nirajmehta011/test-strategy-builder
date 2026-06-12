@@ -3,8 +3,8 @@ import { useSettings } from '../context/SettingsContext'
 import jiraService from '../services/jiraService'
 import aiService from '../services/aiService'
 import type { TestCase } from '../services/aiService'
-import { exportAsMarkdown, exportAsJSON, copyToClipboard } from '../services/exportService'
-import JiraIDInput from './JiraIDInput'
+import { exportAsMarkdown, exportAsJSON, copyToClipboard, cleanHTMLToText } from '../services/exportService'
+import JiraIDInput, { GenerationInput } from './JiraIDInput'
 import type { GenerationMode } from './JiraIDInput'
 import StrategyDisplay from './StrategyDisplay'
 import TestPlanDisplay from './TestPlanDisplay'
@@ -13,6 +13,16 @@ import TestCasesDisplay from './TestCasesDisplay'
 const providerLabels: Record<string, string> = {
   groq: '⚡ Groq', openrouter: '🔀 OpenRouter', gemini: '💎 Gemini', openai: '🤖 OpenAI'
 }
+
+const API_BASE = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'http://localhost:3001/api' : '/api')
+
+const SUPPORTED_FEATURES = [
+  { id: 'strategy', icon: '🎯', title: 'Test Strategy', desc: '10-section risk-based QA approach · Markdown/JSON export' },
+  { id: 'plan', icon: '📋', title: 'Test Plan', desc: 'Full RICE-POT IEEE 829 document · PDF + DOCX export' },
+  { id: 'cases', icon: '🧪', title: 'Test Cases', desc: 'Detailed test cases · incremental expansion · custom scenarios · CSV export' },
+  { id: 'sources', icon: '🌐', title: 'Multi-Input Sources', desc: 'Jira tickets, Website URLs, or Spec Documents (TXT, MD, PDF, DOCX)' },
+  { id: 'automate', icon: '🤖', title: 'Automate Any Cases', desc: 'Playwright POM automation generated directly from CSV, Excel, or PDF' }
+]
 
 export default function TestStrategyPage() {
   const { settings } = useSettings()
@@ -62,17 +72,17 @@ export default function TestStrategyPage() {
     }
   }
 
-  const generate = async (jiraId: string, mode: GenerationMode) => {
+  const generate = async (input: GenerationInput, mode: GenerationMode) => {
     setLoading(true)
     setError(null)
-    setCurrentJiraId(jiraId)
     setActiveMode(mode)
+    setStrategy(null)
+    setTestPlan(null)
+    setTestCases(null)
+    setPlaywrightData(null) // reset playwright data on new ticket / regeneration
+    setNoMoreCases(false) // reset noMoreCases state
 
     try {
-      if (!settings.jira.email || !settings.jira.token || !settings.jira.baseUrl) {
-        throw new Error('Please configure your Jira credentials in the left settings panel.')
-      }
-
       const apiKey = getApiKey()
       if (!apiKey) {
         const names: Record<string, string> = {
@@ -81,11 +91,67 @@ export default function TestStrategyPage() {
         throw new Error(`Please enter your ${names[settings.ai.provider]} API key in the left settings panel.`)
       }
 
-      jiraService.initialize(settings.jira.email, settings.jira.token, settings.jira.baseUrl)
-      const fetchedIssue = await jiraService.fetchIssue(jiraId)
+      let fetchedIssue: any = null
+
+      if (input.source === 'jira') {
+        if (!settings.jira.email || !settings.jira.token || !settings.jira.baseUrl) {
+          throw new Error('Please configure your Jira credentials in the left settings panel.')
+        }
+        const jiraId = input.jiraId || ''
+        setCurrentJiraId(jiraId)
+        jiraService.initialize(settings.jira.email, settings.jira.token, settings.jira.baseUrl)
+        fetchedIssue = await jiraService.fetchIssue(jiraId)
+      } else if (input.source === 'url') {
+        const url = input.url || ''
+        setCurrentJiraId(`URL: ${url}`)
+        
+        // Scraping the URL via backend API
+        const response = await fetch(`${API_BASE}/fetch-url`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url })
+        })
+        if (!response.ok) {
+          const errData = await response.json()
+          throw new Error(errData.error || 'Failed to fetch/scrape website URL')
+        }
+        const data = await response.json()
+        const cleanedText = cleanHTMLToText(data.html)
+
+        if (!cleanedText) {
+          throw new Error('No readable text content found on the scraped page.')
+        }
+
+        fetchedIssue = {
+          key: 'URL',
+          summary: `Scraped Website: ${url}`,
+          description: `URL: ${url}\n\nWebpage content:\n${cleanedText}`,
+          priority: 'Medium',
+          status: 'Active',
+          created: new Date().toISOString(),
+          updated: new Date().toISOString()
+        }
+      } else if (input.source === 'doc') {
+        const docName = input.docName || 'Uploaded Spec'
+        const docText = input.docText || ''
+        setCurrentJiraId(`Doc: ${docName}`)
+
+        fetchedIssue = {
+          key: 'DOC',
+          summary: `Document: ${docName}`,
+          description: `Document Name: ${docName}\n\nDocument specification content:\n${docText}`,
+          priority: 'Medium',
+          status: 'Active',
+          created: new Date().toISOString(),
+          updated: new Date().toISOString()
+        }
+      }
+
+      if (!fetchedIssue) {
+        throw new Error('Could not resolve generation input.')
+      }
+
       setJiraIssue(fetchedIssue)
-      setPlaywrightData(null) // reset playwright data on new ticket / regeneration
-      setNoMoreCases(false) // reset noMoreCases state
 
       const prov = settings.ai.provider
       const model = getModel()
@@ -251,9 +317,9 @@ export default function TestStrategyPage() {
     <div className="animate-in">
       {/* Page Header */}
       <div className="page-header">
-        <h1 className="page-title">BLAST QA Generator</h1>
+        <h1 className="page-title">QA Nexus Suite</h1>
         <p className="page-subtitle">
-          Generate comprehensive Test Strategies, RICE-POT Test Plans, and Jira/Zephyr Test Cases from any Jira ticket
+          Generate comprehensive Test Strategies, RICE-POT Test Plans, and Jira/Zephyr Test Cases from Jira tickets, Web URLs, or Specification Documents
         </p>
       </div>
 
@@ -366,31 +432,19 @@ export default function TestStrategyPage() {
           <div className="empty-state-icon">🧪</div>
           <h2 className="empty-state-title">Ready to generate</h2>
           <p className="empty-state-desc">
-            Select a generation mode above, configure your Jira credentials and AI provider in the left panel,
-            then enter a Jira Issue ID to generate comprehensive QA documentation.
+            Select a generation mode above, configure your AI provider in the left panel,
+            then input your Jira ticket, Web URL, or Spec Document to generate comprehensive QA documentation.
           </p>
-          <div className="empty-state-modes">
-            <div className="empty-state-mode-card">
-              <span className="es-mode-icon">🎯</span>
-              <div>
-                <div className="es-mode-title">Test Strategy</div>
-                <div className="es-mode-desc">10-section risk-based QA approach · Markdown/JSON export</div>
+          <div className="empty-state-modes" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+            {SUPPORTED_FEATURES.map(feat => (
+              <div key={feat.id} className="empty-state-mode-card">
+                <span className="es-mode-icon">{feat.icon}</span>
+                <div>
+                  <div className="es-mode-title">{feat.title}</div>
+                  <div className="es-mode-desc">{feat.desc}</div>
+                </div>
               </div>
-            </div>
-            <div className="empty-state-mode-card">
-              <span className="es-mode-icon">📋</span>
-              <div>
-                <div className="es-mode-title">Test Plan</div>
-                <div className="es-mode-desc">Full RICE-POT IEEE 829 document · PDF + DOCX export</div>
-              </div>
-            </div>
-            <div className="empty-state-mode-card">
-              <span className="es-mode-icon">🧪</span>
-              <div>
-                <div className="es-mode-title">Test Cases</div>
-                <div className="es-mode-desc">25+ Jira/Zephyr cases · filterable table · CSV export</div>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       )}

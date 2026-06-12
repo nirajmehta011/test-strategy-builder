@@ -9,8 +9,8 @@ export default function Header({ darkMode, onToggleDarkMode }: HeaderProps) {
       <div className="header-brand">
         <div className="header-logo">🧪</div>
         <div>
-          <div className="header-title">BLAST Test Strategy Builder</div>
-          <div className="header-subtitle">AI-powered QA strategy generator</div>
+          <div className="header-title">QA Nexus</div>
+          <div className="header-subtitle">AI-powered QA intelligent suite</div>
         </div>
       </div>
 

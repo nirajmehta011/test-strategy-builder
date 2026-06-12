@@ -1028,7 +1028,7 @@ class AIService {
 
     if (files.length > 0 || playwrightConfig || packageJson) {
       return {
-        readme: readme || '# Playwright Test Suite\nGenerated automatically by BLAST QA Framework.',
+        readme: readme || '# Playwright Test Suite\nGenerated automatically by QA Nexus Framework.',
         packageJson: packageJson || '{\n  "name": "playwright-tests",\n  "version": "1.0.0",\n  "devDependencies": {\n    "@playwright/test": "^1.40.0",\n    "typescript": "^5.0.0"\n  }\n}',
         tsconfigJson: tsconfigJson || '{\n  "compilerOptions": {\n    "target": "ES2022",\n    "module": "commonjs",\n    "moduleResolution": "node",\n    "sourceMap": true,\n    "outDir": "./dist"\n  }\n}',
         playwrightConfig: playwrightConfig || "import { defineConfig } from '@playwright/test';\nexport default defineConfig({\n  use: { headless: true, screenshot: 'only-on-failure' },\n});",
@@ -1042,7 +1042,7 @@ class AIService {
     if (tsMatches.length > 0) {
       const combinedCode = tsMatches.map(m => m[1]).join('\n\n')
       return {
-        readme: '# Playwright Test Suite\nGenerated automatically by BLAST QA Framework.',
+        readme: '# Playwright Test Suite\nGenerated automatically by QA Nexus Framework.',
         packageJson: '{\n  "name": "playwright-tests",\n  "version": "1.0.0",\n  "devDependencies": {\n    "@playwright/test": "^1.40.0",\n    "typescript": "^5.0.0"\n  }\n}',
         tsconfigJson: '{\n  "compilerOptions": {\n    "target": "ES2022",\n    "module": "commonjs",\n    "moduleResolution": "node",\n    "sourceMap": true,\n    "outDir": "./dist"\n  }\n}',
         playwrightConfig: "import { defineConfig } from '@playwright/test';\nexport default defineConfig({\n  use: { headless: true, screenshot: 'only-on-failure' },\n});",

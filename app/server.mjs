@@ -24,6 +24,25 @@ app.get('/health', (req, res) => {
   res.json({ status: 'Backend proxy server running', version: '2.0.0' })
 })
 
+// ─────────────────────────────── FETCH URL ───────────────────────────────────
+app.post('/api/fetch-url', async (req, res) => {
+  try {
+    const { url } = req.body
+    if (!url) return res.status(400).json({ error: 'Missing URL parameter' })
+    const response = await axios.get(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'
+      },
+      timeout: 15000
+    })
+    res.json({ success: true, html: response.data })
+  } catch (error) {
+    const msg = error.response?.data || error.message || 'Failed to fetch website URL'
+    res.status(500).json({ error: msg })
+  }
+})
+
 // ─────────────────────────────── JIRA ────────────────────────────────────────
 app.post('/api/jira/test', async (req, res) => {
   try {

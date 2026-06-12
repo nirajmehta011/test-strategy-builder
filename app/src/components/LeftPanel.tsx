@@ -294,7 +294,7 @@ export default function LeftPanel() {
         {/* ── Version ── */}
         <div style={{ marginTop: 'auto', paddingTop: 16 }}>
           <p style={{ fontSize: 10, color: 'var(--sidebar-muted)', textAlign: 'center' }}>
-            BLAST FW v2.0 · Multi-Provider AI
+            QA Nexus FW v2.0 · Multi-Provider AI
           </p>
         </div>
       </div>

@@ -324,7 +324,7 @@ export default function TestCasesDisplay({
             <span style={{ fontSize: 20 }}>✨</span>
             <div>
               <h4 style={{ margin: 0, fontSize: 13, fontWeight: 'bold', color: '#eab308' }}>All Standard Scenarios Covered</h4>
-              <p style={{ margin: '2px 0 0 0', fontSize: 11, color: 'var(--text-muted)' }}>The BLAST AI framework indicates all key ticket flows are covered. If you have a specific scenario you would like to test, describe it below to generate a new detailed case.</p>
+              <p style={{ margin: '2px 0 0 0', fontSize: 11, color: 'var(--text-muted)' }}>The QA Nexus AI framework indicates all key ticket flows are covered. If you have a specific scenario you would like to test, describe it below to generate a new detailed case.</p>
             </div>
           </div>
           <div style={{ display: 'flex', gap: 10 }}>

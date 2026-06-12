@@ -89,7 +89,7 @@ export function exportTestPlanAsPDF(content: string, jiraId: string) {
     doc.rect(0, 0, pageW, 12, 'F')
     doc.setFontSize(7)
     doc.setTextColor(140, 145, 165)
-    doc.text('BLAST QA FRAMEWORK — RICE-POT TEST PLAN', margin, 8)
+    doc.text('QA NEXUS FRAMEWORK — RICE-POT TEST PLAN', margin, 8)
     doc.text(`${jiraId}  |  ${new Date().toLocaleDateString()}`, pageW - margin, 8, { align: 'right' })
   }
 
@@ -126,7 +126,7 @@ export function exportTestPlanAsPDF(content: string, jiraId: string) {
   doc.setFontSize(9)
   doc.setTextColor(100, 116, 139)
   doc.text(`Generated: ${new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}`, pageW / 2, 105, { align: 'center' })
-  doc.text('Prepared by BLAST QA Framework', pageW / 2, 113, { align: 'center' })
+  doc.text('Prepared by QA Nexus Framework', pageW / 2, 113, { align: 'center' })
 
   // Version box
   doc.setFillColor(19, 22, 36)
@@ -684,4 +684,29 @@ export async function parsePDFToText(file: File): Promise<string> {
   
   return fullText
 }
+
+export async function parseDocxToText(file: File): Promise<string> {
+  await loadScript('https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js')
+  const mammoth = (window as any).mammoth
+  const arrayBuffer = await file.arrayBuffer()
+  const result = await mammoth.extractRawText({ arrayBuffer })
+  return result.value
+}
+
+export function cleanHTMLToText(html: string): string {
+  const parser = new DOMParser()
+  const doc = parser.parseFromString(html, 'text/html')
+  
+  // Remove scripts, styles, navigation, headers, footers, etc.
+  const elementsToRemove = doc.querySelectorAll('script, style, nav, header, footer, noscript, iframe, svg, form')
+  elementsToRemove.forEach(el => el.remove())
+  
+  const bodyText = doc.body?.innerText || doc.body?.textContent || ''
+  
+  return bodyText
+    .replace(/\s+/g, ' ')
+    .replace(/\n\s*\n/g, '\n')
+    .trim()
+}
+
 
