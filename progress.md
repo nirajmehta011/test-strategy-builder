@@ -217,15 +217,17 @@
 - ✅ **Interactive Timeline Stepper UI** — Created a live timeline showing execution status (Pending, Running, Completed, Failed) and elapsed execution times in seconds for each phase.
 - ✅ **Download All ZIP Bundle** — Compiled Strategy, Markdown/Word Plans, Cases CSV, and Playwright framework ZIP into a single master archive `qa-nexus-assets-[JiraID].zip`.
 - ✅ **Tabbed Results Sync** — Automatically populate Strategy, Plan, and Cases tabs upon workflow completion so users can review individual items directly.
+- ✅ **Dynamic Exhaustive Cases** — Configured AI prompt instructions to generate all possible cases based on Test Plan context, ensuring complete requirement coverage with no artificial constraints.
+- ✅ **Light Mode Contrast Overhaul** — Swapped light theme CSS text variables to Slate-700/500 and replaced hardcoded workflow stepper styles with adaptive custom properties to guarantee high contrast.
 
 ### Files Modified
 | File | Change |
 |------|--------|
-| `src/services/aiService.ts` | Prompt context chaining (`testStrategy` in plan prompt, `testPlan` in cases prompt) |
+| `src/services/aiService.ts` | Prompt context chaining (`testStrategy` in plan prompt, `testPlan` in cases prompt) & dynamic cases rule |
 | `src/services/exportService.ts` | Upgraded DOCX, CSV, and ZIP download flags, added `exportAllAssetsAsZip` builder |
 | `src/components/JiraIDInput.tsx` | Added `workflow` mode, responsive `repeat(auto-fit, minmax(180px, 1fr))` grid styling |
 | `src/components/TestStrategyPage.tsx` | Implemented sequential generation loop, status stepper component, and zip handler |
-| `src/styles/globals.css` | Added styles for timeline track, bullet nodes, pulsing indicators, and status badges |
+| `src/styles/globals.css` | Added styles for timeline track, bullet nodes, pulsing indicators, and status badges, adjusted light mode variable contrast |
 | `findings.md` | Logged v5.0 features |
 | `progress.md` | Logged v5.0 progress |
 
