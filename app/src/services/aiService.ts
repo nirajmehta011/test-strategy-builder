@@ -380,8 +380,8 @@ Priority: ${jiraIssue.priority}
 ${testPlan ? `\n\n### TEST PLAN CONTEXT:\nUse the following Test Plan to derive and align all your test cases:\n${testPlan}\n` : ''}
 
 Task:
-Dynamically determine the number of test cases to generate based on the complexity and depth of the Jira ticket details:
-- CRITICAL RULE: You MUST generate AT LEAST 10 to 15 distinct, detailed test cases. Do not generate only 1-2 cases. If the ticket description is brief, expand on secondary checkpaths, validation requirements, responsiveness, accessibility, security, and edge scenarios to ensure at least 10 high-quality cases are returned.
+${testPlan ? `You must analyze the provided Test Plan and think dynamically to generate ALL possible detailed test cases to exhaustively cover every requirement, interface, component, procedure, and scenario defined in the Test Plan. Do not limit yourself to 10-15 cases; generate as many as necessary to guarantee 100% test coverage of the plan details. Ensure every single scenario is covered with crisp and detailed step-by-step actions and expected results.` : `Dynamically determine the number of test cases to generate based on the complexity and depth of the Jira ticket details:
+- CRITICAL RULE: You MUST generate AT LEAST 10 to 15 distinct, detailed test cases. Do not generate only 1-2 cases. If the ticket description is brief, expand on secondary checkpaths, validation requirements, responsiveness, accessibility, security, and edge scenarios to ensure at least 10 high-quality cases are returned.`}
 Ensure all cases are high-quality, non-redundant, and cover various scenario types:
 - happy_path (core workflows)
 - negative (invalid inputs, wrong states)

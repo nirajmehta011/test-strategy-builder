@@ -24,8 +24,8 @@
   --sidebar-active-border: #6366f1;
 
   --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-muted: #94a3b8;
+  --text-secondary: #334155; /* slate-700 for better visibility in light mode */
+  --text-muted: #64748b;     /* slate-500 for better visibility in light mode */
 
   --accent: #6366f1;
   --accent-hover: #4f46e5;
@@ -1494,13 +1494,13 @@ body {
 .workflow-step-name {
   font-size: 13px;
   font-weight: 600;
-  color: #94a3b8;
+  color: var(--text-muted);
   transition: all 0.3s ease;
 }
 
 .workflow-step-time {
   font-size: 11px;
-  color: #64748b;
+  color: var(--text-muted);
   background: rgba(255, 255, 255, 0.04);
   padding: 1px 6px;
   border-radius: 4px;
@@ -1508,7 +1508,7 @@ body {
 
 .workflow-step-desc {
   font-size: 12px;
-  color: #475569;
+  color: var(--text-secondary);
   margin: 0;
   transition: all 0.3s ease;
 }
@@ -1525,7 +1525,7 @@ body {
   color: #f59e0b;
 }
 .workflow-step.running .workflow-step-desc {
-  color: #cbd5e1;
+  color: var(--text-primary);
 }
 
 /* Status: completed */
@@ -1535,10 +1535,10 @@ body {
   color: #10b981;
 }
 .workflow-step.completed .workflow-step-name {
-  color: #e2e8f0;
+  color: var(--text-primary);
 }
 .workflow-step.completed .workflow-step-desc {
-  color: #94a3b8;
+  color: var(--text-secondary);
 }
 
 /* Status: failed */
