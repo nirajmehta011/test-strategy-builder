@@ -1607,12 +1607,49 @@ body {
   100% { transform: scale(1); }
 }
 
-/* ─── Input Source Selector ─────────────────────────────────────────────── */
+/* ─── Input Source Selector (Segmented Control) ─────────────────────────── */
 .input-source-selector {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
+  display: flex;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 4px;
   margin-bottom: 16px;
+  gap: 4px;
+  width: 100%;
+}
+
+.source-tab-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: calc(var(--radius-sm) - 2px);
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition);
+  white-space: nowrap;
+}
+
+.source-tab-btn:hover:not(:disabled) {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.source-tab-btn.active {
+  background: var(--mode-color, var(--accent));
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2);
+}
+
+.source-tab-icon {
+  font-size: 13px;
 }
 
 /* ─── Sidebar Toggle Button ─────────────────────────────────────────────── */
@@ -1639,10 +1676,24 @@ body {
 
 /* ─── Responsive Mobile Layout & Styles ────────────────────────────────── */
 @media (max-width: 768px) {
-  /* Stack app body elements vertically */
+  /* Enable native smooth scrolling and disable height-lock clipping on mobile */
+  html, body, .app-shell {
+    height: auto !important;
+    min-height: 100vh;
+    overflow-y: visible !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
   .app-body {
-    flex-direction: column;
-    overflow: visible;
+    flex-direction: column !important;
+    overflow: visible !important;
+    height: auto !important;
+  }
+
+  .main-content {
+    padding: 16px 12px;
+    overflow: visible !important;
+    height: auto !important;
   }
 
   /* Make settings sidebar a sliding drawer overlay */
@@ -1657,17 +1708,12 @@ body {
     transform: translateX(0);
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     border-right: 1px solid var(--sidebar-border);
+    height: calc(100vh - var(--header-height)) !important;
   }
 
   .sidebar.collapsed {
     transform: translateX(-100%) !important;
     width: 290px !important;
-  }
-
-  /* Reduce main workspace content margins/paddings */
-  .main-content {
-    padding: 16px 12px;
-    overflow-x: hidden;
   }
 
   /* Header sizes adjust for small screens */
@@ -1691,14 +1737,46 @@ body {
     display: none; /* Hide subtitle */
   }
 
-  /* Input forms wrap to vertical stack */
-  .input-source-selector {
-    grid-template-columns: 1fr;
-    gap: 8px;
+  /* Horizontal swipeable mode selector ribbon */
+  .mode-selector {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    padding: 4px 2px 8px 2px !important;
+    gap: 8px !important;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
   }
 
-  .mode-selector {
-    grid-template-columns: 1fr !important;
+  .mode-selector::-webkit-scrollbar {
+    display: none; /* Hide scrollbar for clean touch swipe UI */
+  }
+
+  .mode-btn {
+    flex: 0 0 auto !important;
+    min-width: 142px;
+    padding: 8px 12px !important;
+    gap: 6px !important;
+  }
+
+  .mode-btn-sub {
+    display: none !important; /* Hide description to conserve vertical height */
+  }
+
+  .mode-btn-label {
+    font-size: 11px !important;
+  }
+
+  /* Input group stacks vertically */
+  .input-source-selector {
+    padding: 3px;
+    gap: 2px;
+  }
+
+  .source-tab-btn {
+    padding: 6px 8px;
+    font-size: 10px;
+    gap: 4px;
   }
 
   .jira-input-wrapper {

@@ -316,42 +316,33 @@ export default function JiraIDInput({ onGenerate, onAutomateFile, loading, activ
           <div className="input-source-selector">
             <button
               type="button"
-              className={`mode-btn ${inputSource === 'jira' ? 'active' : ''}`}
+              className={`source-tab-btn ${inputSource === 'jira' ? 'active' : ''}`}
               style={inputSource === 'jira' ? { '--mode-color': activeInfo.color } as React.CSSProperties : {}}
               onClick={() => { setInputSource('jira'); setValidationError(null) }}
               disabled={loading}
             >
-              <span className="mode-btn-icon">🎫</span>
-              <div className="mode-btn-text">
-                <span className="mode-btn-label">Jira Ticket</span>
-                <span className="mode-btn-sub">Fetch issue key</span>
-              </div>
+              <span className="source-tab-icon">🎫</span>
+              <span className="source-tab-label">Jira Ticket</span>
             </button>
             <button
               type="button"
-              className={`mode-btn ${inputSource === 'url' ? 'active' : ''}`}
+              className={`source-tab-btn ${inputSource === 'url' ? 'active' : ''}`}
               style={inputSource === 'url' ? { '--mode-color': activeInfo.color } as React.CSSProperties : {}}
               onClick={() => { setInputSource('url'); setValidationError(null) }}
               disabled={loading}
             >
-              <span className="mode-btn-icon">🌐</span>
-              <div className="mode-btn-text">
-                <span className="mode-btn-label">Website URL</span>
-                <span className="mode-btn-sub">Scrape site content</span>
-              </div>
+              <span className="source-tab-icon">🌐</span>
+              <span className="source-tab-label">Website URL</span>
             </button>
             <button
               type="button"
-              className={`mode-btn ${inputSource === 'doc' ? 'active' : ''}`}
+              className={`source-tab-btn ${inputSource === 'doc' ? 'active' : ''}`}
               style={inputSource === 'doc' ? { '--mode-color': activeInfo.color } as React.CSSProperties : {}}
               onClick={() => { setInputSource('doc'); setValidationError(null) }}
               disabled={loading}
             >
-              <span className="mode-btn-icon">📄</span>
-              <div className="mode-btn-text">
-                <span className="mode-btn-label">Spec Document</span>
-                <span className="mode-btn-sub">TXT, MD, PDF, DOCX</span>
-              </div>
+              <span className="source-tab-icon">📄</span>
+              <span className="source-tab-label">Spec Document</span>
             </button>
           </div>
 
