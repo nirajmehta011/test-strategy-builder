@@ -71,6 +71,7 @@
 28. **Multi-Input Spec Context & Rebranding (v4.5)** — Rebranded the platform to **QA Nexus** and added support for generating Test Strategies, Test Plans, and Test Cases from Jira issues, Website URLs (via backend proxy scraping), and Specification Documents (.txt, .md, .pdf, .docx, .doc parsed client-side).
 29. **Complete QA Flow Pipeline (v5.0)** — Runs Strategy → Plan → Cases → Playwright POM Automation sequentially from a single click. Displays execution progress using an interactive timeline with steps, durations, and logs, and provides a "Download All QA Assets" ZIP compiler.
 30. **Extended Timeouts & Advanced Principal QA Persona (v5.1)** — Upgraded Axios timeouts to 300000ms (5 mins) across server proxy & React app, configured Vercel serverless functions `maxDuration` to 300s, and introduced an elite Principal QA Automation Engineer prompt to generate 15-30 comprehensive test cases grouped into 7 specific QA buckets.
+31. **Mobile Responsiveness & Overlay Sidebar Drawer (v5.2)** — Restructured the layout for viewports <= 768px: sidebar slides off-screen via CSS transitions, auto-collapses on mount, and is toggled via a settings gear button in the header. Restructured input selector grids, timeline logs, output tabs, and statistics dashboards to wrap and stack responsively.
 
 ## New Dependencies (v4.1)
 | Package | Version | Purpose |

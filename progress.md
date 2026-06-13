@@ -248,4 +248,25 @@
 | `findings.md` | Logged v5.1 features |
 | `progress.md` | Logged v5.1 progress |
 
+## v5.2 – Mobile Responsiveness and UI Compatibility ✅
+
+### New Features Implemented
+- ✅ **Sliding Overlay Settings Drawer** — Configured settings sidebar (`.sidebar`) to overlay content absolutely, slide smoothly off-screen via `transform: translateX(-100%)` when collapsed on mobile, and collapse completely to `width: 0` on desktop.
+- ✅ **Header Toggle Controller** — Added a settings gear toggle button (`⚙️`) in `Header.tsx` which links to the global preferences store and is accessible on both mobile and desktop screen sizes.
+- ✅ **Default Collapse on Mount** — Auto-detects device viewport inside `App.tsx` on mount and collapses the settings panel on viewports <= 768px.
+- ✅ **Vertical Form Adaptation** — Modified `JiraIDInput.tsx` to clear inline style dependencies and refactored the source buttons grid and Jira submit button to stack vertically on mobile.
+- ✅ **Flexible Output Tabs & Wrap** — Allowed output tabs selector and stats widgets grid to wrap responsively, fitting narrow screens without overflowing.
+
+### Files Modified
+| File | Change |
+|------|--------|
+| `app/src/components/Header.tsx` | Added settings sidebar gear toggle button linked to preferences |
+| `app/src/components/LeftPanel.tsx` | Bound collapsed class name dynamically to preferences |
+| `app/src/components/JiraIDInput.tsx` | Removed inline layout styles from input-source-selector |
+| `app/src/App.tsx` | Added window screen width check to auto-collapse settings on mount on mobile |
+| `app/src/styles/globals.css` | Implemented `.input-source-selector` defaults and media query overrides for layout, drawers, timeline, stats grid, and tab wrap |
+| `findings.md` | Logged v5.2 features |
+| `progress.md` | Logged v5.2 progress |
+
+
 

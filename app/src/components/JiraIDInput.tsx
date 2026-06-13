@@ -313,7 +313,7 @@ export default function JiraIDInput({ onGenerate, onAutomateFile, loading, activ
         /* Multi-Input Source block */
         <div>
           {/* Input Source Tabs */}
-          <div className="input-source-selector" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '16px' }}>
+          <div className="input-source-selector">
             <button
               type="button"
               className={`mode-btn ${inputSource === 'jira' ? 'active' : ''}`}

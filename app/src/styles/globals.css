@@ -1606,3 +1606,243 @@ body {
   50% { transform: scale(1.05); }
   100% { transform: scale(1); }
 }
+
+/* ─── Input Source Selector ─────────────────────────────────────────────── */
+.input-source-selector {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+/* ─── Sidebar Toggle Button ─────────────────────────────────────────────── */
+.sidebar-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  width: 32px;
+  height: 32px;
+  margin-right: 4px;
+}
+
+.sidebar-toggle-btn.active {
+  background: var(--sidebar-active);
+  border-color: var(--accent);
+}
+
+/* Hide settings content when sidebar is fully collapsed on desktop */
+.sidebar.collapsed {
+  width: 0 !important;
+  border-right-color: transparent !important;
+}
+
+/* ─── Responsive Mobile Layout & Styles ────────────────────────────────── */
+@media (max-width: 768px) {
+  /* Stack app body elements vertically */
+  .app-body {
+    flex-direction: column;
+    overflow: visible;
+  }
+
+  /* Make settings sidebar a sliding drawer overlay */
+  .sidebar {
+    position: fixed;
+    top: var(--header-height);
+    left: 0;
+    bottom: 0;
+    width: 290px !important;
+    z-index: 1000;
+    box-shadow: 10px 0 30px rgba(0, 0, 0, 0.4);
+    transform: translateX(0);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border-right: 1px solid var(--sidebar-border);
+  }
+
+  .sidebar.collapsed {
+    transform: translateX(-100%) !important;
+    width: 290px !important;
+  }
+
+  /* Reduce main workspace content margins/paddings */
+  .main-content {
+    padding: 16px 12px;
+    overflow-x: hidden;
+  }
+
+  /* Header sizes adjust for small screens */
+  .app-header {
+    padding: 0 12px;
+  }
+  
+  .header-logo {
+    display: none; /* Hide logo icon to fit title + toggles */
+  }
+
+  .header-brand {
+    gap: 6px;
+  }
+
+  .header-title {
+    font-size: 14px;
+  }
+
+  .header-subtitle {
+    display: none; /* Hide subtitle */
+  }
+
+  /* Input forms wrap to vertical stack */
+  .input-source-selector {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .mode-selector {
+    grid-template-columns: 1fr !important;
+  }
+
+  .jira-input-wrapper {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .jira-input-wrapper .jira-input {
+    width: 100%;
+  }
+
+  .jira-input-wrapper .btn-primary {
+    width: 100%;
+    margin-left: 0;
+    justify-content: center;
+  }
+
+  /* Stepper timeline adjustments */
+  .workflow-timeline::before {
+    left: 14px;
+  }
+
+  .workflow-step {
+    gap: 10px;
+  }
+
+  .workflow-step-bullet {
+    width: 22px;
+    height: 22px;
+    font-size: 9px;
+  }
+
+  .workflow-step-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
+
+  .workflow-completed-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .workflow-completed-actions button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Output Tabs wrapping for narrow screens */
+  .output-tabs {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .output-tab {
+    padding: 6px 10px;
+    font-size: 12px;
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+
+  .output-tabs-jira-id {
+    margin-left: 0;
+    margin-top: 6px;
+    width: 100%;
+    text-align: center;
+  }
+
+  /* Filter toolbar responsive spacing */
+  .tc-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .tc-filters {
+    justify-content: center;
+  }
+
+  .tc-toolbar-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .tc-search {
+    flex: 1;
+    width: auto;
+  }
+
+  /* Stats dashboard grid layout */
+  .tc-stats-bar {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .tc-stat {
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 8px;
+  }
+
+  .tc-stat:nth-child(2) {
+    border-right: none;
+  }
+
+  .tc-stat:nth-child(3) {
+    border-bottom: none;
+  }
+
+  .tc-stat:nth-child(4) {
+    border-right: none;
+    border-bottom: none;
+  }
+
+  .tc-stat-provider {
+    grid-column: span 2;
+    text-align: center;
+    border-top: 1px solid var(--border);
+    border-right: none;
+    border-bottom: none;
+    padding: 8px;
+  }
+
+  /* Playwright POM preview code Explorer tabs wrap */
+  .tab-headers {
+    flex-wrap: wrap;
+  }
+
+  .tab-header-btn {
+    flex: 1 1 auto;
+    justify-content: center;
+    padding: 6px 8px;
+    font-size: 11px;
+  }
+
+  /* Custom scenarios inputs */
+  .custom-scenario-input-container {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .custom-scenario-input-container button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+

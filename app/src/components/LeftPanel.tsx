@@ -113,8 +113,10 @@ export default function LeftPanel() {
 
   const displayModels = loadedModels.length > 0 ? loadedModels : aiService.getDefaultModels(settings.ai.provider)
 
+  const collapsed = settings.preferences.sidebarCollapsed
+
   return (
-    <div className="sidebar">
+    <div className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
       <div className="sidebar-scroll">
 
         {/* ── Jira Section ── */}

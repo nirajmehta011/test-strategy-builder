@@ -17,6 +17,12 @@ function AppContent() {
     }
   }, [darkMode])
 
+  useEffect(() => {
+    if (window.innerWidth <= 768) {
+      updatePreferences({ sidebarCollapsed: true })
+    }
+  }, [])
+
   const toggleDarkMode = () => {
     updatePreferences({ darkMode: !darkMode })
   }
