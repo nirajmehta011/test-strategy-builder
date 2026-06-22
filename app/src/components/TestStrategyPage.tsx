@@ -123,6 +123,30 @@ export default function TestStrategyPage() {
         throw new Error(`Please enter your ${names[settings.ai.provider]} API key in the left settings panel.`)
       }
 
+      const prov = settings.ai.provider
+      const model = getModel()
+
+      if (input.source === 'visual') {
+        const isGemini = prov === 'gemini'
+        const isOpenAI = prov === 'openai' && (model.startsWith('gpt-4o') || model.includes('vision') || model === 'gpt-4-turbo')
+        const isOpenRouter = prov === 'openrouter' && (
+          model.includes('gpt-4o') || 
+          model.includes('claude-3.5') || 
+          model.includes('claude-3-haiku') || 
+          model.includes('gemini-')
+        )
+        
+        if (!isGemini && !isOpenAI && !isOpenRouter) {
+          const names: Record<string, string> = {
+            groq: 'Groq', openrouter: 'OpenRouter', gemini: 'Gemini', openai: 'OpenAI'
+          }
+          throw new Error(
+            `The selected model "${model}" (${names[prov]}) does not support visual specifications (screenshots/videos). ` +
+            `Please switch to a vision-capable model (such as Gemini 1.5 Flash, GPT-4o, or Claude 3.5 Sonnet) in the left settings panel.`
+          )
+        }
+      }
+
       if (mode === 'workflow') {
         setWorkflowState({
           status: 'running',
