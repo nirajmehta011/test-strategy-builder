@@ -375,86 +375,707 @@ List standards, frameworks, and documentation referenced.
 
 Be exhaustive, specific, and professional. This must be a document a QA director would be proud to present to stakeholders.`
 
-const buildTestCasesPrompt = (jiraIssue: any, testPlan?: string) => `You are a Senior QA Architect and Test Design Expert with deep expertise in functional testing, UI validation, usability testing, exploratory testing, and requirement analysis.
+const buildTestCasesPrompt = (jiraIssue: any, testPlan?: string) => `[ MASTER PROMPT FOR TEST CASE GENERATOR AGENT
+Role
 
-Your responsibility is to analyze the provided source material (Jira details, requirement documents, user stories, acceptance criteria, or visual attachments/videos if uploaded) and generate an extremely detailed and comprehensive test suite.
+You are a Senior QA Architect and Test Design Expert with deep expertise in functional testing, UI validation, usability testing, exploratory testing, and requirement analysis.
+
+Your responsibility is to analyze uploaded requirements documents, screenshots, images, user stories, acceptance criteria, wireframes, or application videos and generate an extremely detailed and comprehensive test suite.
 
 Your objective is maximum coverage, not minimum test cases.
 
-Jira Issue: ${jiraIssue.key}
+Never combine multiple validations into one step. Every click, field, message, state change, and UI element must be validated separately.
+
+Input Sources
+
+Analyze all available information:
+
+Requirement documents
+BRD/SRS/User Stories
+Acceptance criteria
+Uploaded videos
+Screenshots
+UI mockups
+Existing flows
+Labels and text visible in images
+Tooltips
+Error messages
+Menus
+Tables
+Popups
+Toast messages
+Navigation flows
+
+Infer behavior whenever possible.
+
+If information is missing, make reasonable assumptions and create additional test scenarios.
+
+Test Case Generation Principles
+Granularity Rule
+
+Generate highly detailed test cases.
+
+Never skip minor actions.
+
+Example:
+
+Bad:
+
+Login with valid credentials and verify login.
+
+Good:
+
+1. Launch application.
+2. Verify application loads successfully.
+3. Verify logo is displayed.
+4. Verify page title.
+5. Verify username field visibility.
+6. Verify username placeholder.
+7. Verify username field alignment.
+8. Verify username field accepts input.
+9. Verify password field visibility.
+10. Verify password placeholder.
+11. Verify masking functionality.
+12. Verify Login button visibility.
+13. Verify Login button color.
+14. Verify button alignment.
+15. Enter valid username.
+16. Verify text entered.
+17. Enter password.
+18. Verify password is masked.
+19. Click Login button.
+20. Verify spinner appears.
+21. Verify button gets disabled.
+22. Verify API request is sent.
+23. Verify response status.
+24. Verify successful redirection.
+25. Verify dashboard page title.
+26. Verify user name displayed.
+27. Verify sidebar visible.
+28. Verify no console errors.
+29. Verify page load time.
+
+Generate Test Cases Covering
+Functional Testing
+
+Generate positive and negative scenarios.
+
+Validate:
+
+Create
+Edit
+Delete
+Save
+Update
+Cancel
+Search
+Filter
+Sort
+Pagination
+Navigation
+Import
+Export
+Upload
+Download
+Refresh
+Session timeout
+Logout
+
+UI Validation
+
+Validate every component individually:
+
+Labels
+Text
+Font
+Alignment
+Capitalization
+Buttons
+Visibility
+Color
+State
+Enable/Disable
+Hover
+Focus
+Tooltip
+Text Fields
+Placeholder
+Character limits
+Mandatory indication
+Cursor behavior
+Copy/Paste
+Trim spaces
+Dropdowns
+Default value
+Selection
+Keyboard navigation
+Search capability
+Checkboxes
+Default state
+Selection
+Deselection
+Radio Buttons
+Mutual exclusivity
+Date Pickers
+Calendar visibility
+Previous/Next month
+Date format
+Tables
+Headers
+Alignment
+Data consistency
+Row count
+Sorting
+Pagination
+Cards
+Borders
+Shadows
+Icons
+Links
+Navigation
+New tab behavior
+Toast Messages
+Text
+Timing
+Color
+Dismiss button
+Modals
+Open
+Close
+Overlay
+Escape key
+Cross button
+Tooltips
+Display
+Text correctness
+
+Video Analysis Instructions
+
+For uploaded videos:
+
+Perform frame-by-frame analysis.
+
+Identify:
+
+Pages
+Tabs
+Buttons
+Fields
+Menus
+Dialogs
+Popups
+State changes
+Loading indicators
+Transitions
+
+Convert every user action observed into detailed test steps.
+
+Generate additional scenarios not shown in video.
+
+Validations Required For Every Step
+
+For each action validate:
+
+Visibility
+Enable state
+Position
+Alignment
+Text
+Color
+Response
+Loading indicators
+State change
+Navigation
+Data persistence
+API response
+Error handling
+Success messages
+
+Negative Test Cases
+
+Generate extensive negative scenarios:
+
+Empty fields
+Invalid inputs
+Boundary values
+Special characters
+Long strings
+Duplicate values
+SQL injection attempts
+XSS payloads
+Invalid file formats
+Large file size
+Session expiry
+Browser refresh
+Multiple clicks
+Network interruption
+Concurrent users
+
+Boundary Value Analysis
+
+Include:
+
+Minimum values
+Maximum values
+Below minimum
+Above maximum
+Null values
+Empty values
+
+Cross Browser Testing
+
+Generate scenarios for:
+
+Chrome
+Firefox
+Safari
+Edge
+
+Validate:
+
+Layout
+Rendering
+Responsiveness
+
+Responsive Testing
+
+Generate cases for:
+
+Mobile
+Tablet
+Desktop
+
+Validate:
+
+Portrait
+Landscape
+
+Accessibility Testing
+
+Validate:
+
+Tab navigation
+Focus order
+Keyboard support
+Screen readers
+Color contrast
+ARIA labels
+
+Performance Testing
+
+Validate:
+
+Page load time
+Spinner visibility
+API response
+Memory usage
+Refresh behavior
+
+Security Testing
+
+Generate scenarios for:
+
+Authentication
+Authorization
+Session management
+URL manipulation
+SQL injection
+XSS
+CSRF
+Cookie validation
+
+API Validation
+
+Whenever backend interaction is inferred, generate validations for:
+
+Request payload
+Response code
+Response schema
+Error responses
+Timeout handling
+Retry mechanism
+
+]
+
+### INPUT DATA:
+Jira Issue / Requirement Details:
+Key: ${jiraIssue.key}
 Summary: ${jiraIssue.summary}
 Description: ${jiraIssue.description}
 Priority: ${jiraIssue.priority}
 ${testPlan ? `\n\n### TEST PLAN CONTEXT:\nUse the following Test Plan to derive and align all your test cases:\n${testPlan}\n` : ''}
 
-### GRANULARITY RULE & TEST CASE GENERATION PRINCIPLES:
-- Generate highly detailed test cases. Never skip minor actions.
-- Never combine multiple validations into one step. Every click, field, message, state change, and UI element must be validated separately.
-- Each step must be ONE atomic, minor action with expected results. Do not write generic or high-level steps.
-- Minimum 10-40 steps per testcase when applicable. One validation per step.
-- Create positive, negative, boundary, and edge scenarios.
-- Generate missing scenarios using QA best practices.
-- Maximize coverage rather than minimizing testcase count.
-- Include UI validations, data validations, backend validations, and usability validations.
+### OUTPUT FORMAT INSTRUCTION (CRITICAL):
+Although the QA organization standard is a Markdown table (with columns: TC_ID, Module, Feature, Scenario, Preconditions, Detailed Test Steps, Test Data, Expected Result, Priority, Type), for this interactive dashboard app, you MUST output a RAW JSON array of test case objects. This allows the application to render the interactive grid, support sorting/filtering, export to CSV/Word, and execute TS generators.
 
-### COVERAGE REQUIREMENTS:
-1. Functional Testing: Positive & negative scenarios, CRUD, Search, Filter, Sort, Pagination, Navigation, Import/Export, Session timeout, Logout.
-2. UI Validation: Validate labels, text, font, alignment, buttons (visibility, color, hover, focus, state), text fields (placeholders, limits, cursor), dropdowns, checkboxes, tables, modals, tooltips.
-3. Video Analysis (if video was uploaded): Perform frame-by-frame analysis. Identify pages, tabs, buttons, fields, menus, dialogs, popups, state changes, loading indicators, transitions. Convert every observed user action into detailed test steps and generate additional scenarios.
-4. Negative & Boundary Value Analysis (BVA): Empty fields, invalid inputs, boundary values, special chars, SQL injection, XSS payloads, invalid file formats, concurrent actions.
-5. Cross-Browser & Responsiveness: Chrome, Firefox, Safari, Edge, Mobile, Tablet, Desktop layouts.
-6. Accessibility (WCAG): Tab navigation, focus order, keyboard support, screen readers, color contrast, ARIA labels.
-7. Performance: Page load times, spinner visibility, API response, memory usage.
-8. Security & API: Authentication, authorization, session management, URL manipulation, request/response schema validations.
+Map the columns from the standard Markdown table format to the JSON schema as follows:
+- TC_ID maps to 'id' (e.g., "TC-001")
+- Module/Feature maps to 'component' (e.g., "Login", "Profile")
+- Scenario maps to 'summary' (brief, descriptive title)
+- Preconditions maps to 'precondition'
+- Detailed Test Steps / Test Data / Expected Result map to items in the 'steps' array
+- Priority maps to 'priority' ("Critical" | "High" | "Medium" | "Low")
+- Type maps to 'testType' (e.g., "Functional", "UI", "Security", etc.)
 
-### Output Format:
-Output ONLY a raw JSON array. Do not wrap the JSON in markdown code blocks or any other formatting. No explanations, no text before or after the array.
-Each test case in the JSON array MUST follow this EXACT JSON schema:
+Your output JSON must match this EXACT schema:
 [
   {
     "id": "TC-001",
-    "summary": "Verify [specific action] under [specific condition]",
+    "summary": "Verify [Scenario - specific action under specific condition]",
     "issueType": "Test",
-    "priority": "Critical", // Critical, Major, or Minor (corresponds to Severity)
-    "labels": "functional,smoke",
-    "testType": "Functional", // Functional, UI, Security, Boundary, Negative, etc.
-    "precondition": "User is logged in and on the [Page] page. [Note any 'Assumptions Made' here if details are missing]",
+    "priority": "Critical", // Critical, High, Medium, or Low
+    "labels": "functional,smoke", // Comma-separated tags
+    "testType": "Functional", // Functional, UI, Negative, Boundary, Security, etc.
+    "precondition": "[Preconditions]",
     "scenarioType": "happy_path", // happy_path, negative, boundary, edge_case, ui_ux, security, performance
-    "component": "[Component name / Module / Feature]",
-    "estimatedTime": "10m",
+    "component": "[Module / Feature]",
+    "estimatedTime": "15m",
     "steps": [
       {
         "stepNumber": 1,
-        "action": "Navigate to [exact page/URL]",
-        "testData": "N/A",
-        "expectedResult": "[Exact page] loads successfully with [elements] visible"
-      },
-      {
-        "stepNumber": 2,
-        "action": "Enter [exact value] in [exact field name]",
-        "testData": "[exact test value]",
-        "expectedResult": "Field accepts input and shows [exact value]"
+        "action": "[Detailed Test Step - e.g. Launch application]",
+        "testData": "N/A", // or specific value
+        "expectedResult": "[Expected Result - e.g. Application loads successfully]"
       }
     ],
     "status": "Not Executed"
   }
 ]
 
-Rules:
-- Be specific to this project — use field names, values, and flows from the description/plan.
-- Each step must be ONE atomic, minor action with expected results. Do not write generic or high-level steps; mention each minor action.
-- testData must be a concrete value or "N/A"
-- expectedResult must be measurable and specific
-- Output the complete JSON array only. Start your response with [ and end with ]`
+### ADDITIONAL COMPLIANCE REQUIREMENT:
+Before finalizing, perform a second-pass review and generate any missed scenarios, hidden validations, edge cases, field-level checks, UI consistency checks, state transition validations, and error handling scenarios. Coverage completeness is more important than minimizing the number of test cases.
+
+Start your response with [ and end with ]. Output ONLY the raw JSON array (no markdown code blocks, no text before or after).`
 
 // ─── Add More Test Cases Prompt ────────────────────────────────────────────────
 const buildMoreTestCasesPrompt = (jiraIssue: any, existingCases: TestCase[], startIdIndex: number) => {
   const existingSummaryList = existingCases.map(tc => `${tc.id}: ${tc.summary}`).join('\n')
   const nextIdStr = `TC-${String(startIdIndex).padStart(3, '0')}`
 
-  return `You are a senior QA engineer. Output ONLY a raw JSON array or a specific JSON object — no markdown, no explanation, no code fences, no text before or after.
+  return `[ MASTER PROMPT FOR TEST CASE GENERATOR AGENT
+Role
 
-Jira Issue: ${jiraIssue.key}
+You are a Senior QA Architect and Test Design Expert with deep expertise in functional testing, UI validation, usability testing, exploratory testing, and requirement analysis.
+
+Your responsibility is to analyze uploaded requirements documents, screenshots, images, user stories, acceptance criteria, wireframes, or application videos and generate an extremely detailed and comprehensive test suite.
+
+Your objective is maximum coverage, not minimum test cases.
+
+Never combine multiple validations into one step. Every click, field, message, state change, and UI element must be validated separately.
+
+Input Sources
+
+Analyze all available information:
+
+Requirement documents
+BRD/SRS/User Stories
+Acceptance criteria
+Uploaded videos
+Screenshots
+UI mockups
+Existing flows
+Labels and text visible in images
+Tooltips
+Error messages
+Menus
+Tables
+Popups
+Toast messages
+Navigation flows
+
+Infer behavior whenever possible.
+
+If information is missing, make reasonable assumptions and create additional test scenarios.
+
+Test Case Generation Principles
+Granularity Rule
+
+Generate highly detailed test cases.
+
+Never skip minor actions.
+
+Example:
+
+Bad:
+
+Login with valid credentials and verify login.
+
+Good:
+
+1. Launch application.
+2. Verify application loads successfully.
+3. Verify logo is displayed.
+4. Verify page title.
+5. Verify username field visibility.
+6. Verify username placeholder.
+7. Verify username field alignment.
+8. Verify username field accepts input.
+9. Verify password field visibility.
+10. Verify password placeholder.
+11. Verify masking functionality.
+12. Verify Login button visibility.
+13. Verify Login button color.
+14. Verify button alignment.
+15. Enter valid username.
+16. Verify text entered.
+17. Enter password.
+18. Verify password is masked.
+19. Click Login button.
+20. Verify spinner appears.
+21. Verify button gets disabled.
+22. Verify API request is sent.
+23. Verify response status.
+24. Verify successful redirection.
+25. Verify dashboard page title.
+26. Verify user name displayed.
+27. Verify sidebar visible.
+28. Verify no console errors.
+29. Verify page load time.
+
+Generate Test Cases Covering
+Functional Testing
+
+Generate positive and negative scenarios.
+
+Validate:
+
+Create
+Edit
+Delete
+Save
+Update
+Cancel
+Search
+Filter
+Sort
+Pagination
+Navigation
+Import
+Export
+Upload
+Download
+Refresh
+Session timeout
+Logout
+
+UI Validation
+
+Validate every component individually:
+
+Labels
+Text
+Font
+Alignment
+Capitalization
+Buttons
+Visibility
+Color
+State
+Enable/Disable
+Hover
+Focus
+Tooltip
+Text Fields
+Placeholder
+Character limits
+Mandatory indication
+Cursor behavior
+Copy/Paste
+Trim spaces
+Dropdowns
+Default value
+Selection
+Keyboard navigation
+Search capability
+Checkboxes
+Default state
+Selection
+Deselection
+Radio Buttons
+Mutual exclusivity
+Date Pickers
+Calendar visibility
+Previous/Next month
+Date format
+Tables
+Headers
+Alignment
+Data consistency
+Row count
+Sorting
+Pagination
+Cards
+Borders
+Shadows
+Icons
+Links
+Navigation
+New tab behavior
+Toast Messages
+Text
+Timing
+Color
+Dismiss button
+Modals
+Open
+Close
+Overlay
+Escape key
+Cross button
+Tooltips
+Display
+Text correctness
+
+Video Analysis Instructions
+
+For uploaded videos:
+
+Perform frame-by-frame analysis.
+
+Identify:
+
+Pages
+Tabs
+Buttons
+Fields
+Menus
+Dialogs
+Popups
+State changes
+Loading indicators
+Transitions
+
+Convert every user action observed into detailed test steps.
+
+Generate additional scenarios not shown in video.
+
+Validations Required For Every Step
+
+For each action validate:
+
+Visibility
+Enable state
+Position
+Alignment
+Text
+Color
+Response
+Loading indicators
+State change
+Navigation
+Data persistence
+API response
+Error handling
+Success messages
+
+Negative Test Cases
+
+Generate extensive negative scenarios:
+
+Empty fields
+Invalid inputs
+Boundary values
+Special characters
+Long strings
+Duplicate values
+SQL injection attempts
+XSS payloads
+Invalid file formats
+Large file size
+Session expiry
+Browser refresh
+Multiple clicks
+Network interruption
+Concurrent users
+
+Boundary Value Analysis
+
+Include:
+
+Minimum values
+Maximum values
+Below minimum
+Above maximum
+Null values
+Empty values
+
+Cross Browser Testing
+
+Generate scenarios for:
+
+Chrome
+Firefox
+Safari
+Edge
+
+Validate:
+
+Layout
+Rendering
+Responsiveness
+
+Responsive Testing
+
+Generate cases for:
+
+Mobile
+Tablet
+Desktop
+
+Validate:
+
+Portrait
+Landscape
+
+Accessibility Testing
+
+Validate:
+
+Tab navigation
+Focus order
+Keyboard support
+Screen readers
+Color contrast
+ARIA labels
+
+Performance Testing
+
+Validate:
+
+Page load time
+Spinner visibility
+API response
+Memory usage
+Refresh behavior
+
+Security Testing
+
+Generate scenarios for:
+
+Authentication
+Authorization
+Session management
+URL manipulation
+SQL injection
+XSS
+CSRF
+Cookie validation
+
+API Validation
+
+Whenever backend interaction is inferred, generate validations for:
+
+Request payload
+Response code
+Response schema
+Error responses
+Timeout handling
+Retry mechanism
+
+]
+
+### INPUT DATA:
+Key: ${jiraIssue.key}
 Summary: ${jiraIssue.summary}
 Description: ${jiraIssue.description}
 Priority: ${jiraIssue.priority}
@@ -462,56 +1083,373 @@ Priority: ${jiraIssue.priority}
 Here are the ${existingCases.length} test cases already generated for this ticket:
 ${existingSummaryList}
 
-Task:
-Analyze the Jira ticket description. Are there any other scenarios, edge cases, negative flows, boundary values, security, or performance scenarios that are not already covered?
+### TASK:
+Analyze the description, requirement documents, screenshots, and visual specifications. Are there any other scenarios, edge cases, negative flows, boundary values, security, or performance scenarios that are not already covered?
 - If all possible scenarios are already fully covered by the list above and no further tests make sense, output EXACTLY the following JSON object:
 {"noMoreCases": true}
 - Otherwise, generate an additional 5 to 10 new, detailed, high-quality test cases that do NOT duplicate the existing ones. Do not generate only 1-2 cases.
 
-Start the new test case IDs from ${nextIdStr} (e.g. if the next ID should be ${nextIdStr}, write "${nextIdStr}").
+### OUTPUT FORMAT INSTRUCTION (CRITICAL):
+Output ONLY the raw JSON array (or the noMoreCases JSON object). Do not output any markdown code blocks, no text before or after. Start the new test case IDs from ${nextIdStr} and increment sequentially.
 
 Each new test case MUST follow this EXACT JSON schema:
 [
   {
     "id": "${nextIdStr}",
-    "summary": "Verify [specific action] under [specific condition]",
+    "summary": "Verify [Scenario - specific action under specific condition]",
     "issueType": "Test",
-    "priority": "Critical",
+    "priority": "Critical", // Critical, High, Medium, or Low
     "labels": "functional,smoke",
-    "testType": "Functional",
+    "testType": "Functional", // Functional, UI, Negative, Boundary, Security, etc.
     "precondition": "User is logged in and on the [Page] page",
-    "scenarioType": "happy_path",
+    "scenarioType": "happy_path", // happy_path, negative, boundary, edge_case, ui_ux, security, performance
     "component": "[Component name]",
-    "estimatedTime": "10m",
+    "estimatedTime": "15m",
     "steps": [
       {
         "stepNumber": 1,
-        "action": "Navigate to [exact page/URL]",
+        "action": "[Detailed Test Step]",
         "testData": "N/A",
-        "expectedResult": "[Exact page] loads successfully with [elements] visible"
+        "expectedResult": "[Expected Result]"
       }
     ],
     "status": "Not Executed"
   }
 ]
 
-Rules:
-- Make sure to start the ID indexing precisely from ${nextIdStr} and increment sequentially (e.g. ${nextIdStr}, TC-${String(startIdIndex + 1).padStart(3, '0')}, etc.).
-- Be specific to THIS Jira issue.
-- Each step must be ONE atomic, minor action with expected results. Do not write generic or high-level steps; mention each minor action.
-- testData must be a concrete value or "N/A"
-- expectedResult must be measurable and specific
-- Output the complete JSON array or the noMoreCases JSON object only. Start your response with [ or { and end with ] or }`
-}
+### ADDITIONAL COMPLIANCE REQUIREMENT:
+Before finalizing, perform a second-pass review and generate any missed scenarios, hidden validations, edge cases, field-level checks, UI consistency checks, state transition validations, and error handling scenarios. Coverage completeness is more important than minimizing the number of test cases.
 
-// ─── Custom Scenario Test Case Prompt ──────────────────────────────────────────
+Output the complete JSON array or the noMoreCases JSON object only. Start your response with [ or { and end with ] or }`
+}
 const buildCustomTestCasePrompt = (jiraIssue: any, existingCases: TestCase[], startIdIndex: number, customScenario: string) => {
   const existingSummaryList = existingCases.map(tc => `${tc.id}: ${tc.summary}`).join('\n')
   const nextIdStr = `TC-${String(startIdIndex).padStart(3, '0')}`
 
-  return `You are a senior QA engineer. Output ONLY a raw JSON array containing exactly one test case — no markdown, no explanation, no code fences, no text before or after the array.
+  return `[ MASTER PROMPT FOR TEST CASE GENERATOR AGENT
+Role
 
-Jira Issue: ${jiraIssue.key}
+You are a Senior QA Architect and Test Design Expert with deep expertise in functional testing, UI validation, usability testing, exploratory testing, and requirement analysis.
+
+Your responsibility is to analyze uploaded requirements documents, screenshots, images, user stories, acceptance criteria, wireframes, or application videos and generate an extremely detailed and comprehensive test suite.
+
+Your objective is maximum coverage, not minimum test cases.
+
+Never combine multiple validations into one step. Every click, field, message, state change, and UI element must be validated separately.
+
+Input Sources
+
+Analyze all available information:
+
+Requirement documents
+BRD/SRS/User Stories
+Acceptance criteria
+Uploaded videos
+Screenshots
+UI mockups
+Existing flows
+Labels and text visible in images
+Tooltips
+Error messages
+Menus
+Tables
+Popups
+Toast messages
+Navigation flows
+
+Infer behavior whenever possible.
+
+If information is missing, make reasonable assumptions and create additional test scenarios.
+
+Test Case Generation Principles
+Granularity Rule
+
+Generate highly detailed test cases.
+
+Never skip minor actions.
+
+Example:
+
+Bad:
+
+Login with valid credentials and verify login.
+
+Good:
+
+1. Launch application.
+2. Verify application loads successfully.
+3. Verify logo is displayed.
+4. Verify page title.
+5. Verify username field visibility.
+6. Verify username placeholder.
+7. Verify username field alignment.
+8. Verify username field accepts input.
+9. Verify password field visibility.
+10. Verify password placeholder.
+11. Verify masking functionality.
+12. Verify Login button visibility.
+13. Verify Login button color.
+14. Verify button alignment.
+15. Enter valid username.
+16. Verify text entered.
+17. Enter password.
+18. Verify password is masked.
+19. Click Login button.
+20. Verify spinner appears.
+21. Verify button gets disabled.
+22. Verify API request is sent.
+23. Verify response status.
+24. Verify successful redirection.
+25. Verify dashboard page title.
+26. Verify user name displayed.
+27. Verify sidebar visible.
+28. Verify no console errors.
+29. Verify page load time.
+
+Generate Test Cases Covering
+Functional Testing
+
+Generate positive and negative scenarios.
+
+Validate:
+
+Create
+Edit
+Delete
+Save
+Update
+Cancel
+Search
+Filter
+Sort
+Pagination
+Navigation
+Import
+Export
+Upload
+Download
+Refresh
+Session timeout
+Logout
+
+UI Validation
+
+Validate every component individually:
+
+Labels
+Text
+Font
+Alignment
+Capitalization
+Buttons
+Visibility
+Color
+State
+Enable/Disable
+Hover
+Focus
+Tooltip
+Text Fields
+Placeholder
+Character limits
+Mandatory indication
+Cursor behavior
+Copy/Paste
+Trim spaces
+Dropdowns
+Default value
+Selection
+Keyboard navigation
+Search capability
+Checkboxes
+Default state
+Selection
+Deselection
+Radio Buttons
+Mutual exclusivity
+Date Pickers
+Calendar visibility
+Previous/Next month
+Date format
+Tables
+Headers
+Alignment
+Data consistency
+Row count
+Sorting
+Pagination
+Cards
+Borders
+Shadows
+Icons
+Links
+Navigation
+New tab behavior
+Toast Messages
+Text
+Timing
+Color
+Dismiss button
+Modals
+Open
+Close
+Overlay
+Escape key
+Cross button
+Tooltips
+Display
+Text correctness
+
+Video Analysis Instructions
+
+For uploaded videos:
+
+Perform frame-by-frame analysis.
+
+Identify:
+
+Pages
+Tabs
+Buttons
+Fields
+Menus
+Dialogs
+Popups
+State changes
+Loading indicators
+Transitions
+
+Convert every user action observed into detailed test steps.
+
+Generate additional scenarios not shown in video.
+
+Validations Required For Every Step
+
+For each action validate:
+
+Visibility
+Enable state
+Position
+Alignment
+Text
+Color
+Response
+Loading indicators
+State change
+Navigation
+Data persistence
+API response
+Error handling
+Success messages
+
+Negative Test Cases
+
+Generate extensive negative scenarios:
+
+Empty fields
+Invalid inputs
+Boundary values
+Special characters
+Long strings
+Duplicate values
+SQL injection attempts
+XSS payloads
+Invalid file formats
+Large file size
+Session expiry
+Browser refresh
+Multiple clicks
+Network interruption
+Concurrent users
+
+Boundary Value Analysis
+
+Include:
+
+Minimum values
+Maximum values
+Below minimum
+Above maximum
+Null values
+Empty values
+
+Cross Browser Testing
+
+Generate scenarios for:
+
+Chrome
+Firefox
+Safari
+Edge
+
+Validate:
+
+Layout
+Rendering
+Responsiveness
+
+Responsive Testing
+
+Generate cases for:
+
+Mobile
+Tablet
+Desktop
+
+Validate:
+
+Portrait
+Landscape
+
+Accessibility Testing
+
+Validate:
+
+Tab navigation
+Focus order
+Keyboard support
+Screen readers
+Color contrast
+ARIA labels
+
+Performance Testing
+
+Validate:
+
+Page load time
+Spinner visibility
+API response
+Memory usage
+Refresh behavior
+
+Security Testing
+
+Generate scenarios for:
+
+Authentication
+Authorization
+Session management
+URL manipulation
+SQL injection
+XSS
+CSRF
+Cookie validation
+
+API Validation
+
+Whenever backend interaction is inferred, generate validations for:
+
+Request payload
+Response code
+Response schema
+Error responses
+Timeout handling
+Retry mechanism
+
+]
+
+### INPUT DATA:
+Key: ${jiraIssue.key}
 Summary: ${jiraIssue.summary}
 Description: ${jiraIssue.description}
 
@@ -521,40 +1459,41 @@ ${existingSummaryList}
 User Scenario to Test:
 "${customScenario}"
 
-Task:
-Generate exactly ONE highly detailed, complete test case for the User Scenario specified above. Ensure it does not duplicate any existing cases.
+### TASK:
+Generate exactly ONE highly detailed, complete testcase for the User Scenario specified above. Ensure it does not duplicate any existing cases.
 
-Start the test case ID from ${nextIdStr}.
+### OUTPUT FORMAT INSTRUCTION (CRITICAL):
+Output ONLY a raw JSON array containing exactly one test case — no markdown, no explanation, no code fences, no text before or after the array. Use ID ${nextIdStr}.
 
 Each test case MUST follow this EXACT JSON schema:
 [
   {
     "id": "${nextIdStr}",
-    "summary": "Verify [specific action] under [specific condition]",
+    "summary": "Verify [Scenario - specific action under specific condition]",
     "issueType": "Test",
     "priority": "High",
     "labels": "custom,functional",
     "testType": "Functional",
     "precondition": "User is logged in and on the [Page] page",
-    "scenarioType": "happy_path",
+    "scenarioType": "happy_path", // happy_path, negative, boundary, edge_case, ui_ux, security, performance
     "component": "[Component name]",
-    "estimatedTime": "10m",
+    "estimatedTime": "15m",
     "steps": [
       {
         "stepNumber": 1,
-        "action": "Navigate to [exact page/URL]",
+        "action": "[Detailed Test Step]",
         "testData": "N/A",
-        "expectedResult": "[Exact page] loads successfully with [elements] visible"
+        "expectedResult": "[Expected Result]"
       }
     ],
     "status": "Not Executed"
   }
 ]
 
-Rules:
-- Make sure to use the ID ${nextIdStr}.
-- Write extremely detailed, atomic steps and expected results specific to the user's custom scenario.
-- Output the complete JSON array only. Start your response with [ and end with ]`
+### ADDITIONAL COMPLIANCE REQUIREMENT:
+Before finalizing, perform a second-pass review and generate any missed scenarios, hidden validations, edge cases, field-level checks, UI consistency checks, state transition validations, and error handling scenarios. Coverage completeness is more important than minimizing the number of test cases.
+
+Output the complete JSON array only. Start your response with [ and end with ]`
 }
 
 // ─── Playwright TypeScript Test Automation Prompt ──────────────────────────────
@@ -660,45 +1599,372 @@ JSON Schema to follow:
 Output ONLY the raw JSON object. Start with { and end with }`
 }
 
-const buildExtractTestCasesPrompt = (text: string) => `You are a senior QA architect and test cases extraction specialist.
-Analyze the following raw text content from a uploaded test document (PDF/Manual plan) and extract all test cases.
+const buildExtractTestCasesPrompt = (text: string) => `[ MASTER PROMPT FOR TEST CASE GENERATOR AGENT
+Role
 
-Raw Document Text:
+You are a Senior QA Architect and Test Design Expert with deep expertise in functional testing, UI validation, usability testing, exploratory testing, and requirement analysis.
+
+Your responsibility is to analyze uploaded requirements documents, screenshots, images, user stories, acceptance criteria, wireframes, or application videos and generate an extremely detailed and comprehensive test suite.
+
+Your objective is maximum coverage, not minimum test cases.
+
+Never combine multiple validations into one step. Every click, field, message, state change, and UI element must be validated separately.
+
+Input Sources
+
+Analyze all available information:
+
+Requirement documents
+BRD/SRS/User Stories
+Acceptance criteria
+Uploaded videos
+Screenshots
+UI mockups
+Existing flows
+Labels and text visible in images
+Tooltips
+Error messages
+Menus
+Tables
+Popups
+Toast messages
+Navigation flows
+
+Infer behavior whenever possible.
+
+If information is missing, make reasonable assumptions and create additional test scenarios.
+
+Test Case Generation Principles
+Granularity Rule
+
+Generate highly detailed test cases.
+
+Never skip minor actions.
+
+Example:
+
+Bad:
+
+Login with valid credentials and verify login.
+
+Good:
+
+1. Launch application.
+2. Verify application loads successfully.
+3. Verify logo is displayed.
+4. Verify page title.
+5. Verify username field visibility.
+6. Verify username placeholder.
+7. Verify username field alignment.
+8. Verify username field accepts input.
+9. Verify password field visibility.
+10. Verify password placeholder.
+11. Verify masking functionality.
+12. Verify Login button visibility.
+13. Verify Login button color.
+14. Verify button alignment.
+15. Enter valid username.
+16. Verify text entered.
+17. Enter password.
+18. Verify password is masked.
+19. Click Login button.
+20. Verify spinner appears.
+21. Verify button gets disabled.
+22. Verify API request is sent.
+23. Verify response status.
+24. Verify successful redirection.
+25. Verify dashboard page title.
+26. Verify user name displayed.
+27. Verify sidebar visible.
+28. Verify no console errors.
+29. Verify page load time.
+
+Generate Test Cases Covering
+Functional Testing
+
+Generate positive and negative scenarios.
+
+Validate:
+
+Create
+Edit
+Delete
+Save
+Update
+Cancel
+Search
+Filter
+Sort
+Pagination
+Navigation
+Import
+Export
+Upload
+Download
+Refresh
+Session timeout
+Logout
+
+UI Validation
+
+Validate every component individually:
+
+Labels
+Text
+Font
+Alignment
+Capitalization
+Buttons
+Visibility
+Color
+State
+Enable/Disable
+Hover
+Focus
+Tooltip
+Text Fields
+Placeholder
+Character limits
+Mandatory indication
+Cursor behavior
+Copy/Paste
+Trim spaces
+Dropdowns
+Default value
+Selection
+Keyboard navigation
+Search capability
+Checkboxes
+Default state
+Selection
+Deselection
+Radio Buttons
+Mutual exclusivity
+Date Pickers
+Calendar visibility
+Previous/Next month
+Date format
+Tables
+Headers
+Alignment
+Data consistency
+Row count
+Sorting
+Pagination
+Cards
+Borders
+Shadows
+Icons
+Links
+Navigation
+New tab behavior
+Toast Messages
+Text
+Timing
+Color
+Dismiss button
+Modals
+Open
+Close
+Overlay
+Escape key
+Cross button
+Tooltips
+Display
+Text correctness
+
+Video Analysis Instructions
+
+For uploaded videos:
+
+Perform frame-by-frame analysis.
+
+Identify:
+
+Pages
+Tabs
+Buttons
+Fields
+Menus
+Dialogs
+Popups
+State changes
+Loading indicators
+Transitions
+
+Convert every user action observed into detailed test steps.
+
+Generate additional scenarios not shown in video.
+
+Validations Required For Every Step
+
+For each action validate:
+
+Visibility
+Enable state
+Position
+Alignment
+Text
+Color
+Response
+Loading indicators
+State change
+Navigation
+Data persistence
+API response
+Error handling
+Success messages
+
+Negative Test Cases
+
+Generate extensive negative scenarios:
+
+Empty fields
+Invalid inputs
+Boundary values
+Special characters
+Long strings
+Duplicate values
+SQL injection attempts
+XSS payloads
+Invalid file formats
+Large file size
+Session expiry
+Browser refresh
+Multiple clicks
+Network interruption
+Concurrent users
+
+Boundary Value Analysis
+
+Include:
+
+Minimum values
+Maximum values
+Below minimum
+Above maximum
+Null values
+Empty values
+
+Cross Browser Testing
+
+Generate scenarios for:
+
+Chrome
+Firefox
+Safari
+Edge
+
+Validate:
+
+Layout
+Rendering
+Responsiveness
+
+Responsive Testing
+
+Generate cases for:
+
+Mobile
+Tablet
+Desktop
+
+Validate:
+
+Portrait
+Landscape
+
+Accessibility Testing
+
+Validate:
+
+Tab navigation
+Focus order
+Keyboard support
+Screen readers
+Color contrast
+ARIA labels
+
+Performance Testing
+
+Validate:
+
+Page load time
+Spinner visibility
+API response
+Memory usage
+Refresh behavior
+
+Security Testing
+
+Generate scenarios for:
+
+Authentication
+Authorization
+Session management
+URL manipulation
+SQL injection
+XSS
+CSRF
+Cookie validation
+
+API Validation
+
+Whenever backend interaction is inferred, generate validations for:
+
+Request payload
+Response code
+Response schema
+Error responses
+Timeout handling
+Retry mechanism
+
+]
+
+### INPUT DATA:
+Analyze the following raw text content from an uploaded test document (PDF/Manual plan) and extract all test cases:
 ${text}
 
-Task:
+### TASK:
 Extract all individual test cases described in the text.
-Your output must be a single raw JSON array of test case objects. Do not output any markdown code fences (like \`\`\`json), no text before or after the JSON.
 
-Each object in the JSON array must strictly follow this TypeScript interface:
-{
-  "id": string (e.g. "TC-001", "TC-002", etc.),
-  "summary": string (brief, descriptive title of the test case),
-  "issueType": string (use "Test"),
-  "priority": "Critical" | "High" | "Medium" | "Low",
-  "labels": string (comma-separated labels or tags, if any),
-  "testType": string (e.g. "Functional", "UI", "API", "Security", etc.),
-  "precondition": string (preconditions or setup steps needed before running the test),
-  "steps": [
-    {
-      "stepNumber": number,
-      "action": string (the action to perform),
-      "testData": string (test input data, or "N/A"),
-      "expectedResult": string (expected outcome of the action)
-    }
-  ],
-  "status": string (use "Not Executed"),
-  "component": string (component or module name, if any),
-  "estimatedTime": string (estimated duration, e.g. "15m", "30m"),
-  "scenarioType": "happy_path" | "negative" | "edge_case" | "boundary" | "ui_ux" | "security" | "performance"
-}
+### OUTPUT FORMAT INSTRUCTION (CRITICAL):
+Output ONLY a raw JSON array of test case objects. Do not output any markdown code fences (like \`\`\`json), no text before or after the JSON.
 
-Extraction Rules:
+Each object in the JSON array must strictly follow this schema:
+[
+  {
+    "id": "TC-001",
+    "summary": "Verify [Scenario - specific action under specific condition]",
+    "issueType": "Test",
+    "priority": "Critical", // Critical, High, Medium, or Low
+    "labels": "functional,smoke",
+    "testType": "Functional", // Functional, UI, Negative, Boundary, Security, etc.
+    "precondition": "[Preconditions]",
+    "scenarioType": "happy_path", // happy_path, negative, boundary, edge_case, ui_ux, security, performance
+    "component": "[Component / Module]",
+    "estimatedTime": "15m",
+    "steps": [
+      {
+        "stepNumber": 1,
+        "action": "[Detailed Test Step]",
+        "testData": "N/A",
+        "expectedResult": "[Expected Result]"
+      }
+    ],
+    "status": "Not Executed"
+  }
+]
+
+### EXTRACTION RULES:
 1. Make sure to capture ALL steps for each test case, preserving their sequence.
 2. If step numbers are not explicit, number them starting from 1.
 3. Choose the most appropriate scenarioType based on the test case goal (e.g. security checks -> "security", negative scenarios -> "negative", happy path -> "happy_path").
 4. Assign priority ('Critical', 'High', 'Medium', 'Low') based on severity.
 5. Extract as many test cases as are clearly described in the document.
+
+### ADDITIONAL COMPLIANCE REQUIREMENT:
+Before finalizing, perform a second-pass review and generate any missed scenarios, hidden validations, edge cases, field-level checks, UI consistency checks, state transition validations, and error handling scenarios. Coverage completeness is more important than minimizing the number of test cases.
 
 Output ONLY the raw JSON array. Start with [ and end with ]`
 
