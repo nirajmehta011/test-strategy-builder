@@ -74,56 +74,123 @@ export default function JiraIDInput({ onGenerate, onAutomateFile, loading, activ
           return
         }
 
-        // Capture a frame every 4 seconds, min 4 frames, max 15 frames
-        const interval = Math.max(3, Math.min(10, duration / 10))
-        const totalFrames = Math.min(15, Math.max(4, Math.floor(duration / interval)))
+        // Dynamically sample: sample every 1.5 - 2 seconds, but at least 15 samples and at most 60 samples
+        const sampleCount = Math.min(60, Math.max(15, Math.floor(duration / 1.5)))
+        const maxSavedFrames = 22 // Cap to prevent Request Entity Too Large errors
+        const threshold = 0.055 // 5.5% pixel change threshold for layout changes
         const frames: { name: string; base64: string; mimeType: string }[] = []
         
         const canvas = document.createElement('canvas')
         const ctx = canvas.getContext('2d')
-        let frameIndex = 0
+
+        // Small offscreen canvas for fast pixel diffing
+        const diffCanvas = document.createElement('canvas')
+        diffCanvas.width = 160
+        diffCanvas.height = 90
+        const diffCtx = diffCanvas.getContext('2d')
+        
+        let lastSavedImgData: ImageData | null = null
+        let sampleIndex = 0
+
+        // Helper to compute absolute average difference between two frames
+        const getFrameDifference = (imgData1: ImageData, imgData2: ImageData): number => {
+          const data1 = imgData1.data
+          const data2 = imgData2.data
+          let diffSum = 0
+          let count = 0
+          const len = data1.length
+          // Sample every 4th pixel (step by 16 in the RGBA flat array) for speed
+          for (let i = 0; i < len; i += 16) {
+            diffSum += Math.abs(data1[i] - data2[i])     // Red
+            diffSum += Math.abs(data1[i+1] - data2[i+1]) // Green
+            diffSum += Math.abs(data1[i+2] - data2[i+2]) // Blue
+            count += 3
+          }
+          return diffSum / (count * 255)
+        }
+
+        // We want to guarantee we get a good baseline (e.g. at least 6 spread out frames)
+        const regularSampleInterval = Math.max(1, Math.floor(sampleCount / 6))
 
         const seekAndCapture = () => {
-          if (frameIndex >= totalFrames) {
+          // If we reached the end of samples or we hit the cap
+          if (sampleIndex >= sampleCount || frames.length >= maxSavedFrames) {
             URL.revokeObjectURL(objectUrl)
             resolve(frames)
             return
           }
 
-          const seekTime = (duration / (totalFrames + 1)) * (frameIndex + 1)
+          // Seek to the next timestamp
+          const seekTime = (duration / (sampleCount - 1)) * sampleIndex
           video.currentTime = seekTime
-          frameIndex++
         }
 
         video.onseeked = () => {
-          if (ctx) {
-            const maxDim = 1280
-            let w = video.videoWidth || 640
-            let h = video.videoHeight || 360
+          if (ctx && diffCtx) {
+            // Draw onto the small canvas for comparison
+            diffCtx.drawImage(video, 0, 0, 160, 90)
+            const currentImgData = diffCtx.getImageData(0, 0, 160, 90)
             
-            if (w > maxDim || h > maxDim) {
-              if (w > h) {
-                h = Math.round((h * maxDim) / w)
-                w = maxDim
-              } else {
-                w = Math.round((w * maxDim) / h)
-                h = maxDim
+            let shouldSave = false
+            
+            // 1. Always save the very first frame for context
+            if (sampleIndex === 0) {
+              shouldSave = true
+            } 
+            // 2. Always save the very last frame to guarantee the ending state is covered
+            else if (sampleIndex === sampleCount - 1) {
+              shouldSave = true
+              // If we are at the limit, pop the second-to-last frame so we don't exceed maxSavedFrames
+              if (frames.length >= maxSavedFrames && frames.length > 1) {
+                frames.pop()
+              }
+            } 
+            // 3. Save regular intervals to guarantee baseline coverage
+            else if (sampleIndex % regularSampleInterval === 0) {
+              shouldSave = true
+            } 
+            // 4. Save if there is a significant layout/UI change (> 5.5% difference)
+            else if (lastSavedImgData) {
+              const diff = getFrameDifference(currentImgData, lastSavedImgData)
+              if (diff > threshold) {
+                shouldSave = true
               }
             }
 
-            canvas.width = w
-            canvas.height = h
-            ctx.drawImage(video, 0, 0, w, h)
-            
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.6)
-            const base64 = dataUrl.split(',')[1] || ''
-            
-            frames.push({
-              name: `${file.name.replace(/\.[^/.]+$/, '')}_frame_${frameIndex}.jpg`,
-              base64,
-              mimeType: 'image/jpeg'
-            })
+            if (shouldSave) {
+              // Extract high-quality frame
+              const maxDim = 1280
+              let w = video.videoWidth || 640
+              let h = video.videoHeight || 360
+              
+              if (w > maxDim || h > maxDim) {
+                if (w > h) {
+                  h = Math.round((h * maxDim) / w)
+                  w = maxDim
+                } else {
+                  w = Math.round((w * maxDim) / h)
+                  h = maxDim
+                }
+              }
+
+              canvas.width = w
+              canvas.height = h
+              ctx.drawImage(video, 0, 0, w, h)
+              
+              const dataUrl = canvas.toDataURL('image/jpeg', 0.6)
+              const base64 = dataUrl.split(',')[1] || ''
+              
+              frames.push({
+                name: `${file.name.replace(/\.[^/.]+$/, '')}_frame_${frames.length + 1}.jpg`,
+                base64,
+                mimeType: 'image/jpeg'
+              })
+              
+              lastSavedImgData = currentImgData
+            }
           }
+
+          sampleIndex++
           seekAndCapture()
         }
 
