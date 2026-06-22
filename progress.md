@@ -268,5 +268,34 @@
 | `findings.md` | Logged v5.2 features |
 | `progress.md` | Logged v5.2 progress |
 
+## v5.3 – Swipable Ribbon & Native Scroll ✅
 
+### New Features Implemented
+- ✅ **Segmented Source Tabs UI** — Redesigned the stacked input source button cards into a neat, space-saving iOS-style segmented control container (`.input-source-selector` and `.source-tab-btn`) which groups "Jira Ticket", "Website URL", and "Spec Document" tabs side-by-side inside a single `40px` row.
+- ✅ **Swipable Horizontal Mode Ribbon** — Refactored `.mode-selector` on mobile to lay out as a single-row flex container (`flex-wrap: nowrap; overflow-x: auto`) with hidden scrollbars and momentum-based touch scrolling (`-webkit-overflow-scrolling: touch`), converting bulky stacked cards into compact sliding pills.
+- ✅ **Native Fluid Mobile Scrolling** — Overrode height-lock restraints (`height: 100vh; overflow: hidden`) inside `@media (max-width: 768px)` on the root `html`, `body`, `.app-shell`, `.app-body`, and `.main-content` containers, allowing the viewport to scroll natively and dynamically with browser address bars.
 
+### Files Modified
+| File | Change |
+|------|--------|
+| `app/src/components/JiraIDInput.tsx` | Refactored input source tabs into segmented `.source-tab-btn` buttons |
+| `app/src/styles/globals.css` | Implemented Segmented Tabs styling, scrollable Mode Selector ribbon overrides, and native mobile scrolling layout rules |
+| `findings.md` | Logged v5.3 features |
+| `progress.md` | Logged v5.3 progress |
+
+## v5.4 – Multimodal Fallback & Style Correction ✅
+
+### New Features Implemented
+- ✅ **Automatic Multimodal Retry Fallback** — Added an error catch-and-retry block in `aiService.ts` to detect `must be a string` validation messages from API proxy responses and automatically re-run the prompt as a text-only payload, preventing total generation failure.
+- ✅ **Enhanced Vision Compatibility Stepper** — Broadened OpenRouter model detection constraints in `TestStrategyPage.tsx` to align with all `claude-3`, `gemini`, and general `vision` keyword sub-strings.
+- ✅ **Readability Style Overrides** — Added specific CSS rules inside `globals.css` that override sidebar style variables for inputs used inside main content cards, resolving invisible placeholders and light text colors on light backgrounds. Removed redundant inline colors from visual focus selectors.
+
+### Files Modified
+| File | Change |
+|------|--------|
+| `app/src/services/aiService.ts` | Implemented error pattern matching and text-only retry handler inside `callAI` |
+| `app/src/components/TestStrategyPage.tsx` | Expanded OpenRouter vision model compatibility checklist |
+| `app/src/components/JiraIDInput.tsx` | Removed inline color rules from specific feature and optional textarea elements |
+| `app/src/styles/globals.css` | Appended overrides for `.field-input` inside main content panels |
+| `findings.md` | Updated feature definitions and changelog |
+| `progress.md` | Documented version 5.4 progress |

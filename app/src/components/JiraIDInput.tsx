@@ -977,7 +977,7 @@ export default function JiraIDInput({ onGenerate, onAutomateFile, loading, activ
                       onChange={e => { setFocusArea(e.target.value); setValidationError(null); }}
                       placeholder="e.g., Billing form validation, user registration flow, password reset steps"
                       className="field-input"
-                      style={{ width: '100%', fontSize: 12, padding: '8px 12px', border: '1px solid rgba(99, 102, 241, 0.35)', background: 'rgba(99, 102, 241, 0.03)', color: 'var(--text-primary)' }}
+                      style={{ width: '100%', fontSize: 12, padding: '8px 12px' }}
                       disabled={loading}
                       required
                     />
@@ -992,7 +992,7 @@ export default function JiraIDInput({ onGenerate, onAutomateFile, loading, activ
                       onChange={e => { setFocusArea(e.target.value); setValidationError(null); }}
                       placeholder="Focus on edge cases and field validation rules visible in the frames..."
                       className="field-input"
-                      style={{ width: '100%', height: 60, minHeight: 60, fontSize: 12, padding: '8px 12px', resize: 'vertical', color: 'var(--text-primary)' }}
+                      style={{ width: '100%', height: 60, minHeight: 60, fontSize: 12, padding: '8px 12px', resize: 'vertical' }}
                       disabled={loading}
                     />
                   </div>

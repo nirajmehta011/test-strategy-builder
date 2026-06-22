@@ -72,6 +72,8 @@
 29. **Complete QA Flow Pipeline (v5.0)** — Runs Strategy → Plan → Cases → Playwright POM Automation sequentially from a single click. Displays execution progress using an interactive timeline with steps, durations, and logs, and provides a "Download All QA Assets" ZIP compiler.
 30. **Extended Timeouts & Advanced Principal QA Persona (v5.1)** — Upgraded Axios timeouts to 300000ms (5 mins) across server proxy & React app, configured Vercel serverless functions `maxDuration` to 300s, and introduced an elite Principal QA Automation Engineer prompt to generate 15-30 comprehensive test cases grouped into 7 specific QA buckets.
 31. **Mobile Responsiveness & Overlay Sidebar Drawer (v5.2)** — Restructured the layout for viewports <= 768px: sidebar slides off-screen via CSS transitions, auto-collapses on mount, and is toggled via a settings gear button in the header. Restructured input selector grids, timeline logs, output tabs, and statistics dashboards to wrap and stack responsively.
+32. **Swipable Ribbon & Native Scroll (v5.3)** — Redesigned input source cards to a single 40px Segmented Control row and transformed the mode selectors into a swipeable horizontal ribbon with hidden scrollbars. Overrode body overflow restrictions to allow native Momentum Elastic scroll on Android and iOS devices.
+33. **Vision Model Compatibility & Payload Fallback (v5.4)** — Added automatic text-only retry if the selected API model/proxy rejects array-based content with a 'must be a string' message. Overrode .field-input inside main panel cards to guarantee high-contrast text and placeholder visibility in both light and dark modes.
 
 ## New Dependencies (v4.1)
 | Package | Version | Purpose |
@@ -89,6 +91,10 @@
 - **Groq-only validation** removed — any provider can be used
 - **Settings persistence** upgraded to `blast_settings_v2` key (merges new fields gracefully)
 - **ADF Parsing Fix (v2.1):** Jira Cloud API v3 returns `description` as an **Atlassian Document Format (ADF)** JSON object, not a plain string. `jiraService.ts` now includes `adfToText()` which recursively walks the ADF node tree (paragraphs, lists, headings, code blocks, inline cards, etc.) to extract readable plain text before PII sanitization. Handles `null`, plain strings (Jira Server), and ADF objects (Jira Cloud).
+- **Vision Model Payload & Text Color Fix (v5.4):**
+  - Resolved `messages[0].content must be a string` by adding an automatic retry fallback in `aiService.ts` that strips media attachments if the API rejects array-based content.
+  - Upgraded OpenRouter vision model compatibility checks to match any models containing `claude-3`, `gemini`, or `vision`.
+  - Fixed light/low-contrast text input colors in the visual uploader by overriding `.field-input` inside the main panel, ensuring perfect readability in both light and dark modes.
 
 ## Key Constraints
 - All API calls go through backend proxy (port 3001) to avoid CORS issues

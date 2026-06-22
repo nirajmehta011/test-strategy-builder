@@ -131,9 +131,9 @@ export default function TestStrategyPage() {
         const isOpenAI = prov === 'openai' && (model.startsWith('gpt-4o') || model.includes('vision') || model === 'gpt-4-turbo')
         const isOpenRouter = prov === 'openrouter' && (
           model.includes('gpt-4o') || 
-          model.includes('claude-3.5') || 
-          model.includes('claude-3-haiku') || 
-          model.includes('gemini-')
+          model.includes('claude-3') || 
+          model.includes('gemini') ||
+          model.includes('vision')
         )
         
         if (!isGemini && !isOpenAI && !isOpenRouter) {

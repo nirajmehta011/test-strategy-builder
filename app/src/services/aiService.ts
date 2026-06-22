@@ -788,9 +788,6 @@ class AIService {
 
       return response.data.content || response.data.response?.choices?.[0]?.message?.content || ''
     } catch (error: any) {
-      if (error.response?.status === 401) throw new Error(`Authentication failed for ${provider}. Check your API key.`)
-      if (error.response?.status === 429) throw new Error(`Rate limited by ${provider}. Please try again in a moment.`)
-      
       const responseData = error.response?.data
       let errMsg = 'AI generation failed'
       if (responseData) {
@@ -806,6 +803,45 @@ class AIService {
       } else {
         errMsg = error.message || errMsg
       }
+
+      // Check if error suggests a multimodal payload incompatibility
+      const isStringValidationError = 
+        errMsg.includes('must be a string') || 
+        errMsg.includes('content must be string') || 
+        errMsg.includes('content must be a string')
+
+      if (mediaFiles && mediaFiles.length > 0 && isStringValidationError) {
+        console.warn('Selected model or proxy provider rejected content array. Retrying with text-only prompt fallback.')
+        try {
+          const response = await axios.post(`${API_BASE}/${provider}/complete`, {
+            apiKey,
+            model,
+            messages: [{ role: 'user', content: prompt }]
+          }, { timeout: timeoutMs })
+
+          return response.data.content || response.data.response?.choices?.[0]?.message?.content || ''
+        } catch (retryError: any) {
+          const retryResponseData = retryError.response?.data
+          let retryErrMsg = 'AI generation fallback failed'
+          if (retryResponseData) {
+            if (typeof retryResponseData.error === 'string') {
+              retryErrMsg = retryResponseData.error
+            } else if (retryResponseData.error && typeof retryResponseData.error.message === 'string') {
+              retryErrMsg = retryResponseData.error.message
+            } else if (typeof retryResponseData.message === 'string') {
+              retryErrMsg = retryResponseData.message
+            } else if (retryResponseData.err && typeof retryResponseData.err === 'string') {
+              retryErrMsg = retryResponseData.err
+            }
+          } else {
+            retryErrMsg = retryError.message || retryErrMsg
+          }
+          throw new Error(retryErrMsg)
+        }
+      }
+
+      if (error.response?.status === 401) throw new Error(`Authentication failed for ${provider}. Check your API key.`)
+      if (error.response?.status === 429) throw new Error(`Rate limited by ${provider}. Please try again in a moment.`)
       throw new Error(errMsg)
     }
   }

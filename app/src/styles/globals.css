@@ -1924,3 +1924,23 @@ body {
   }
 }
 
+/* ─── Overrides for field-input in Main Content Area ─────────────────────── */
+.main-content .field-input,
+.jira-input-card .field-input {
+  background: var(--bg-surface-2);
+  border: 1.5px solid var(--border-strong);
+  color: var(--text-primary);
+}
+
+.main-content .field-input::placeholder,
+.jira-input-card .field-input::placeholder {
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+
+.main-content .field-input:focus,
+.jira-input-card .field-input:focus {
+  border-color: var(--accent);
+  background: var(--bg-surface);
+  box-shadow: 0 0 0 2px var(--accent-light);
+}
