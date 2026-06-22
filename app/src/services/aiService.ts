@@ -790,7 +790,23 @@ class AIService {
     } catch (error: any) {
       if (error.response?.status === 401) throw new Error(`Authentication failed for ${provider}. Check your API key.`)
       if (error.response?.status === 429) throw new Error(`Rate limited by ${provider}. Please try again in a moment.`)
-      throw new Error(error.response?.data?.error || error.message || 'AI generation failed')
+      
+      const responseData = error.response?.data
+      let errMsg = 'AI generation failed'
+      if (responseData) {
+        if (typeof responseData.error === 'string') {
+          errMsg = responseData.error
+        } else if (responseData.error && typeof responseData.error.message === 'string') {
+          errMsg = responseData.error.message
+        } else if (typeof responseData.message === 'string') {
+          errMsg = responseData.message
+        } else if (responseData.err && typeof responseData.err === 'string') {
+          errMsg = responseData.err
+        }
+      } else {
+        errMsg = error.message || errMsg
+      }
+      throw new Error(errMsg)
     }
   }
 

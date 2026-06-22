@@ -126,6 +126,10 @@ export default function JiraIDInput({ onGenerate, onAutomateFile, loading, activ
       setValidationError('Please upload at least one screenshot/video or fetch frames from Figma.')
       return
     }
+    if (scopeOption === 'specific' && !focusArea.trim()) {
+      setValidationError('Please specify details for the specific feature you want to test.')
+      return
+    }
     setValidationError(null)
 
     const mediaFiles = visualFiles.map(vf => ({
@@ -816,7 +820,7 @@ export default function JiraIDInput({ onGenerate, onAutomateFile, loading, activ
                       type="radio"
                       name="scopeOption"
                       checked={scopeOption === 'all'}
-                      onChange={() => setScopeOption('all')}
+                      onChange={() => { setScopeOption('all'); setValidationError(null); }}
                       disabled={loading}
                     />
                     Generate all possible cases about all features
@@ -826,24 +830,44 @@ export default function JiraIDInput({ onGenerate, onAutomateFile, loading, activ
                       type="radio"
                       name="scopeOption"
                       checked={scopeOption === 'specific'}
-                      onChange={() => setScopeOption('specific')}
+                      onChange={() => { setScopeOption('specific'); setValidationError(null); }}
                       disabled={loading}
                     />
                     Limit to a specific feature only
                   </label>
                 </div>
 
-                <textarea
-                  value={focusArea}
-                  onChange={e => setFocusArea(e.target.value)}
-                  placeholder={scopeOption === 'specific' 
-                    ? "Mention which specific feature to extract cases for (e.g. 'Extract cases for billing form validation steps shown in the video only')."
-                    : "Add optional instructions or details (e.g. 'Focus on edge cases and field validation rules visible in the frames')."
-                  }
-                  className="field-input"
-                  style={{ width: '100%', height: 60, minHeight: 60, fontSize: 12, padding: '8px 12px', resize: 'vertical' }}
-                  disabled={loading}
-                />
+                {scopeOption === 'specific' ? (
+                  <div className="animate-in" style={{ marginTop: 12 }}>
+                    <label className="field-label" style={{ fontSize: 11, color: 'var(--accent)', marginBottom: 4, display: 'block', fontWeight: 600 }}>
+                      Specific Feature Details (Required)
+                    </label>
+                    <input
+                      type="text"
+                      value={focusArea}
+                      onChange={e => { setFocusArea(e.target.value); setValidationError(null); }}
+                      placeholder="e.g., Billing form validation, user registration flow, password reset steps"
+                      className="field-input"
+                      style={{ width: '100%', fontSize: 12, padding: '8px 12px', border: '1px solid rgba(99, 102, 241, 0.35)', background: 'rgba(99, 102, 241, 0.03)' }}
+                      disabled={loading}
+                      required
+                    />
+                  </div>
+                ) : (
+                  <div className="animate-in" style={{ marginTop: 12 }}>
+                    <label className="field-label" style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, display: 'block' }}>
+                      Additional Context / Instructions (Optional)
+                    </label>
+                    <textarea
+                      value={focusArea}
+                      onChange={e => { setFocusArea(e.target.value); setValidationError(null); }}
+                      placeholder="Focus on edge cases and field validation rules visible in the frames..."
+                      className="field-input"
+                      style={{ width: '100%', height: 60, minHeight: 60, fontSize: 12, padding: '8px 12px', resize: 'vertical' }}
+                      disabled={loading}
+                    />
+                  </div>
+                )}
               </div>
 
               {validationError && (
