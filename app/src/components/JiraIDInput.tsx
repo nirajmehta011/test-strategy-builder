@@ -54,19 +54,126 @@ export default function JiraIDInput({ onGenerate, onAutomateFile, loading, activ
   const [figmaStatus, setFigmaStatus] = useState<string | null>(null)
   const [scopeOption, setScopeOption] = useState<'specific' | 'all'>('all')
   const [focusArea, setFocusArea] = useState('')
+  const [extractingVideo, setExtractingVideo] = useState(false)
 
-  const handleVisualFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const extractFramesFromVideo = (file: File): Promise<{ name: string; base64: string; mimeType: string }[]> => {
+    return new Promise((resolve, reject) => {
+      const video = document.createElement('video')
+      video.preload = 'metadata'
+      video.muted = true
+      video.playsInline = true
+      
+      const objectUrl = URL.createObjectURL(file)
+      video.src = objectUrl
+
+      video.onloadedmetadata = () => {
+        const duration = video.duration
+        if (isNaN(duration) || duration <= 0) {
+          URL.revokeObjectURL(objectUrl)
+          reject(new Error('Invalid video duration.'))
+          return
+        }
+
+        // Capture a frame every 4 seconds, min 4 frames, max 15 frames
+        const interval = Math.max(3, Math.min(10, duration / 10))
+        const totalFrames = Math.min(15, Math.max(4, Math.floor(duration / interval)))
+        const frames: { name: string; base64: string; mimeType: string }[] = []
+        
+        const canvas = document.createElement('canvas')
+        const ctx = canvas.getContext('2d')
+        let frameIndex = 0
+
+        const seekAndCapture = () => {
+          if (frameIndex >= totalFrames) {
+            URL.revokeObjectURL(objectUrl)
+            resolve(frames)
+            return
+          }
+
+          const seekTime = (duration / (totalFrames + 1)) * (frameIndex + 1)
+          video.currentTime = seekTime
+          frameIndex++
+        }
+
+        video.onseeked = () => {
+          if (ctx) {
+            const maxDim = 1280
+            let w = video.videoWidth || 640
+            let h = video.videoHeight || 360
+            
+            if (w > maxDim || h > maxDim) {
+              if (w > h) {
+                h = Math.round((h * maxDim) / w)
+                w = maxDim
+              } else {
+                w = Math.round((w * maxDim) / h)
+                h = maxDim
+              }
+            }
+
+            canvas.width = w
+            canvas.height = h
+            ctx.drawImage(video, 0, 0, w, h)
+            
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.6)
+            const base64 = dataUrl.split(',')[1] || ''
+            
+            frames.push({
+              name: `${file.name.replace(/\.[^/.]+$/, '')}_frame_${frameIndex}.jpg`,
+              base64,
+              mimeType: 'image/jpeg'
+            })
+          }
+          seekAndCapture()
+        }
+
+        video.onerror = () => {
+          URL.revokeObjectURL(objectUrl)
+          reject(new Error('Failed to process video frames.'))
+        }
+
+        seekAndCapture()
+      }
+
+      video.onerror = () => {
+        URL.revokeObjectURL(objectUrl)
+        reject(new Error('Failed to load video file.'))
+      }
+    })
+  }
+
+  const handleVisualFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (files) {
-      Array.from(files).forEach(file => {
-        const reader = new FileReader()
-        reader.onload = (event) => {
-          const base64 = (event.target?.result as string).split(',')[1] || ''
-          setVisualFiles(prev => [...prev, { file, base64 }])
-        }
-        reader.readAsDataURL(file)
-      })
       setValidationError(null)
+      const fileList = Array.from(files)
+      
+      for (const file of fileList) {
+        if (file.type.startsWith('video/')) {
+          setExtractingVideo(true)
+          try {
+            const frames = await extractFramesFromVideo(file)
+            setVisualFiles(prev => [
+              ...prev,
+              ...frames.map(f => ({
+                file: new File([], f.name, { type: f.mimeType }),
+                base64: f.base64
+              }))
+            ])
+          } catch (err: any) {
+            setValidationError(`Failed to extract frames from video: ${err.message}`)
+          } finally {
+            setExtractingVideo(false)
+          }
+        } else {
+          const reader = new FileReader()
+          reader.onload = (event) => {
+            const base64 = (event.target?.result as string).split(',')[1] || ''
+            setVisualFiles(prev => [...prev, { file, base64 }])
+          }
+          reader.readAsDataURL(file)
+        }
+      }
     }
   }
 
@@ -668,35 +775,57 @@ export default function JiraIDInput({ onGenerate, onAutomateFile, loading, activ
                     </span>
                   </label>
                   
-                  <label 
-                    className="csv-upload-label" 
-                    style={{ 
-                      display: 'flex', 
-                      flexDirection: 'column', 
-                      alignItems: 'center', 
-                      justifyContent: 'center', 
-                      padding: '24px 16px', 
-                      background: 'rgba(255, 255, 255, 0.02)', 
-                      border: '1px dashed rgba(255, 255, 255, 0.12)', 
-                      borderRadius: 8, 
-                      cursor: loading ? 'not-allowed' : 'pointer', 
-                      transition: 'var(--transition)',
-                      opacity: loading ? 0.6 : 1,
-                      textAlign: 'center'
-                    }}
-                  >
-                    <span style={{ fontSize: 28, marginBottom: 8 }}>🎬</span>
-                    <span style={{ fontSize: 13, fontWeight: 'bold', color: 'var(--text-primary)' }}>Click to upload screenshot or feature video</span>
-                    <span style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>Accepts MP4, WEBM, PNG, JPG, JPEG</span>
-                    <input
-                      type="file"
-                      multiple
-                      accept="image/*,video/*"
-                      onChange={handleVisualFileChange}
-                      disabled={loading}
-                      style={{ display: 'none' }}
-                    />
-                  </label>
+                  {extractingVideo ? (
+                    <div 
+                      style={{ 
+                        display: 'flex', 
+                        flexDirection: 'column', 
+                        alignItems: 'center', 
+                        justifyContent: 'center', 
+                        padding: '24px 16px', 
+                        background: 'rgba(99, 102, 241, 0.05)', 
+                        border: '1px dashed rgba(99, 102, 241, 0.3)', 
+                        borderRadius: 8, 
+                        textAlign: 'center',
+                        color: 'var(--accent)',
+                        minHeight: 110
+                      }}
+                    >
+                      <span className="btn-spinner" style={{ borderLeftColor: 'var(--accent)', width: 24, height: 24, marginBottom: 12 }} />
+                      <span style={{ fontSize: 13, fontWeight: 'bold' }}>🎞️ Extracting video frames...</span>
+                      <span style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>Optimizing visual specification layout steps</span>
+                    </div>
+                  ) : (
+                    <label 
+                      className="csv-upload-label" 
+                      style={{ 
+                        display: 'flex', 
+                        flexDirection: 'column', 
+                        alignItems: 'center', 
+                        justifyContent: 'center', 
+                        padding: '24px 16px', 
+                        background: 'rgba(255, 255, 255, 0.02)', 
+                        border: '1px dashed rgba(255, 255, 255, 0.12)', 
+                        borderRadius: 8, 
+                        cursor: loading || extractingVideo ? 'not-allowed' : 'pointer', 
+                        transition: 'var(--transition)',
+                        opacity: loading || extractingVideo ? 0.6 : 1,
+                        textAlign: 'center'
+                      }}
+                    >
+                      <span style={{ fontSize: 28, marginBottom: 8 }}>🎬</span>
+                      <span style={{ fontSize: 13, fontWeight: 'bold', color: 'var(--text-primary)' }}>Click to upload screenshot or feature video</span>
+                      <span style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>Accepts MP4, WEBM, PNG, JPG, JPEG</span>
+                      <input
+                        type="file"
+                        multiple
+                        accept="image/*,video/*"
+                        onChange={handleVisualFileChange}
+                        disabled={loading || extractingVideo}
+                        style={{ display: 'none' }}
+                      />
+                    </label>
+                  )}
                   
                   {visualFiles.length > 0 && (
                     <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
