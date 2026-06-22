@@ -196,11 +196,45 @@ app.post('/api/gemini/complete', async (req, res) => {
     const { apiKey, model, messages } = req.body
     if (!apiKey || !model || !messages) return res.status(400).json({ error: 'Missing required parameters' })
 
-    const userMessage = messages.find(m => m.role === 'user')?.content || ''
+    const contents = []
+    for (const msg of messages) {
+      const role = msg.role === 'assistant' ? 'model' : 'user'
+      const parts = []
+
+      if (typeof msg.content === 'string') {
+        parts.push({ text: msg.content })
+      } else if (Array.isArray(msg.content)) {
+        for (const part of msg.content) {
+          if (part.type === 'text') {
+            parts.push({ text: part.text })
+          } else if (part.type === 'image_url') {
+            const url = part.image_url?.url || ''
+            const match = url.match(/^data:([^;]+);base64,(.+)$/)
+            if (match) {
+              parts.push({
+                inlineData: {
+                  mimeType: match[1],
+                  data: match[2]
+                }
+              })
+            }
+          } else if (part.type === 'inline_data') {
+            parts.push({
+              inlineData: {
+                mimeType: part.mimeType,
+                data: part.data
+              }
+            })
+          }
+        }
+      }
+      contents.push({ role, parts })
+    }
+
     const response = await axios.post(
       `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
       {
-        contents: [{ role: 'user', parts: [{ text: userMessage }] }],
+        contents,
         generationConfig: { temperature: 0.7, maxOutputTokens: 4000 }
       },
       { timeout: 300000 }
@@ -255,6 +289,85 @@ app.post('/api/openai/complete', async (req, res) => {
     if (e.response?.status === 401) return res.status(401).json({ error: 'OpenAI authentication failed' })
     if (e.response?.status === 429) return res.status(429).json({ error: 'OpenAI rate limited – try again later' })
     res.status(500).json({ error: e.response?.data?.error?.message || e.message || 'Unknown error' })
+  }
+})
+
+// ─────────────────────────────── FIGMA ───────────────────────────────────────
+app.post('/api/figma/fetch', async (req, res) => {
+  try {
+    const { fileUrl, accessToken } = req.body
+    if (!fileUrl) return res.status(400).json({ error: 'Missing Figma URL' })
+    if (!accessToken) return res.status(400).json({ error: 'Missing Figma Personal Access Token' })
+
+    const match = fileUrl.match(/(?:file|design)\/([a-zA-Z0-9]{22,128})/)
+    if (!match) {
+      return res.status(400).json({ error: 'Invalid Figma URL format' })
+    }
+    const fileKey = match[1]
+
+    const urlObj = new URL(fileUrl)
+    const nodeId = urlObj.searchParams.get('node-id')
+
+    let apiUrl = `https://api.figma.com/v1/files/${fileKey}`
+    if (nodeId) {
+      apiUrl += `?ids=${nodeId}`
+    }
+
+    const fileResponse = await axios.get(apiUrl, {
+      headers: { 'X-Figma-Token': accessToken },
+      timeout: 15000
+    })
+
+    let ids = nodeId
+    if (!ids) {
+      const frames = []
+      const walk = (node) => {
+        if (node.type === 'FRAME' || node.type === 'CANVAS' || node.type === 'COMPONENT') {
+          frames.push(node.id)
+        }
+        if (node.children) {
+          node.children.forEach(walk)
+        }
+      }
+      if (fileResponse.data.document) walk(fileResponse.data.document)
+      ids = frames.slice(0, 5).join(',')
+    }
+
+    if (!ids) {
+      return res.status(400).json({ error: 'No frames or components found in the Figma file' })
+    }
+
+    const imagesResponse = await axios.get(`https://api.figma.com/v1/images/${fileKey}?ids=${ids}&format=png`, {
+      headers: { 'X-Figma-Token': accessToken },
+      timeout: 15000
+    })
+
+    const imageUrls = imagesResponse.data.images || {}
+    const exportedImages = []
+
+    for (const [id, url] of Object.entries(imageUrls)) {
+      if (url) {
+        const imgResp = await axios.get(url, { responseType: 'arraybuffer', timeout: 10000 })
+        const base64 = Buffer.from(imgResp.data).toString('base64')
+        exportedImages.push({
+          nodeId: id,
+          mimeType: 'image/png',
+          base64: base64
+        })
+      }
+    }
+
+    res.json({
+      success: true,
+      fileName: fileResponse.data.name,
+      images: exportedImages,
+      nodeId: nodeId
+    })
+  } catch (error) {
+    console.error('Figma fetch error:', error.message)
+    const status = error.response?.status || 500
+    const msg = error.response?.data?.err || error.response?.data?.message || error.message || 'Failed to fetch Figma file'
+    res.status(status).json({ error: msg })
   }
 })
 

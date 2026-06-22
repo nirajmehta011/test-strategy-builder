@@ -188,6 +188,28 @@ export default function TestStrategyPage() {
             created: new Date().toISOString(),
             updated: new Date().toISOString()
           }
+        } else if (input.source === 'visual') {
+          const hasFiles = !!(input.mediaFiles && input.mediaFiles.length > 0)
+          const fileNames = input.mediaFiles ? input.mediaFiles.map(f => f.name).join(', ') : 'None'
+          const figmaUrl = input.figmaUrl || ''
+          const focusArea = input.focusArea || ''
+          const scopeOption = input.scopeOption || 'all'
+
+          setCurrentJiraId((input.mediaFiles && hasFiles) ? `Visual Spec: ${input.mediaFiles[0].name}` : 'Visual Mockups')
+
+          fetchedIssue = {
+            key: 'VISUAL',
+            summary: hasFiles ? `Visual Walkthrough / Screenshots: ${fileNames}` : `Figma Mockups: ${figmaUrl}`,
+            description: `Visual specification requirement analysis:
+- Uploaded Spec Files: ${fileNames}
+- Figma URL: ${figmaUrl || 'None'}
+- Scope Focus Option: ${scopeOption === 'specific' ? 'LIMIT TO SPECIFIC FEATURE ONLY' : 'ALL POSSIBLE CASES / FEATURES'}
+- Focus/Feature Scope Instructions: ${focusArea || 'None'}`,
+            priority: 'Medium',
+            status: 'Active',
+            created: new Date().toISOString(),
+            updated: new Date().toISOString()
+          }
         }
 
         if (!fetchedIssue) {
@@ -203,7 +225,7 @@ export default function TestStrategyPage() {
         const startStrategy = Date.now()
         let stratResult = ''
         try {
-          stratResult = await aiService.generateTestStrategy(prov, apiKey, model, fetchedIssue)
+          stratResult = await aiService.generateTestStrategy(prov, apiKey, model, fetchedIssue, input.mediaFiles)
           const duration = Math.round((Date.now() - startStrategy) / 1000)
           setStrategy(stratResult)
           setWorkflowState(prev => ({
@@ -232,7 +254,7 @@ export default function TestStrategyPage() {
         const startPlan = Date.now()
         let planResult = ''
         try {
-          planResult = await aiService.generateTestPlan(prov, apiKey, model, fetchedIssue, stratResult)
+          planResult = await aiService.generateTestPlan(prov, apiKey, model, fetchedIssue, stratResult, input.mediaFiles)
           const duration = Math.round((Date.now() - startPlan) / 1000)
           setTestPlan(planResult)
           setWorkflowState(prev => ({
@@ -261,7 +283,7 @@ export default function TestStrategyPage() {
         const startCases = Date.now()
         let casesResult: TestCase[] = []
         try {
-          casesResult = await aiService.generateTestCases(prov, apiKey, model, fetchedIssue, planResult)
+          casesResult = await aiService.generateTestCases(prov, apiKey, model, fetchedIssue, planResult, input.mediaFiles)
           const duration = Math.round((Date.now() - startCases) / 1000)
           setTestCases(casesResult)
           setWorkflowState(prev => ({
@@ -370,6 +392,28 @@ export default function TestStrategyPage() {
             created: new Date().toISOString(),
             updated: new Date().toISOString()
           }
+        } else if (input.source === 'visual') {
+          const hasFiles = !!(input.mediaFiles && input.mediaFiles.length > 0)
+          const fileNames = input.mediaFiles ? input.mediaFiles.map(f => f.name).join(', ') : 'None'
+          const figmaUrl = input.figmaUrl || ''
+          const focusArea = input.focusArea || ''
+          const scopeOption = input.scopeOption || 'all'
+
+          setCurrentJiraId((input.mediaFiles && hasFiles) ? `Visual Spec: ${input.mediaFiles[0].name}` : 'Visual Mockups')
+
+          fetchedIssue = {
+            key: 'VISUAL',
+            summary: hasFiles ? `Visual Walkthrough / Screenshots: ${fileNames}` : `Figma Mockups: ${figmaUrl}`,
+            description: `Visual specification requirement analysis:
+- Uploaded Spec Files: ${fileNames}
+- Figma URL: ${figmaUrl || 'None'}
+- Scope Focus Option: ${scopeOption === 'specific' ? 'LIMIT TO SPECIFIC FEATURE ONLY' : 'ALL POSSIBLE CASES / FEATURES'}
+- Focus/Feature Scope Instructions: ${focusArea || 'None'}`,
+            priority: 'Medium',
+            status: 'Active',
+            created: new Date().toISOString(),
+            updated: new Date().toISOString()
+          }
         }
 
         if (!fetchedIssue) {
@@ -382,15 +426,15 @@ export default function TestStrategyPage() {
         const model = getModel()
     
         if (mode === 'strategy') {
-          const result = await aiService.generateTestStrategy(prov, apiKey, model, fetchedIssue)
+          const result = await aiService.generateTestStrategy(prov, apiKey, model, fetchedIssue, input.mediaFiles)
           setStrategy(result)
           setViewTab('strategy')
         } else if (mode === 'plan') {
-          const result = await aiService.generateTestPlan(prov, apiKey, model, fetchedIssue)
+          const result = await aiService.generateTestPlan(prov, apiKey, model, fetchedIssue, undefined, input.mediaFiles)
           setTestPlan(result)
           setViewTab('plan')
         } else if (mode === 'cases') {
-          const result = await aiService.generateTestCases(prov, apiKey, model, fetchedIssue)
+          const result = await aiService.generateTestCases(prov, apiKey, model, fetchedIssue, undefined, input.mediaFiles)
           setTestCases(result)
           setViewTab('cases')
         }

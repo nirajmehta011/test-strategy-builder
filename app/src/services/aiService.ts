@@ -8,6 +8,11 @@ export interface AIModel {
   name: string
 }
 
+export interface MediaFileData {
+  mimeType: string
+  base64: string
+}
+
 export interface TestCase {
   id: string
   summary: string
@@ -370,9 +375,11 @@ List standards, frameworks, and documentation referenced.
 
 Be exhaustive, specific, and professional. This must be a document a QA director would be proud to present to stakeholders.`
 
-const buildTestCasesPrompt = (jiraIssue: any, testPlan?: string) => `You are an elite, Principal QA Automation and Manual Testing Engineer with decades of experience in breaking software, identifying hidden edge cases, and ensuring 100% airtight test coverage.
+const buildTestCasesPrompt = (jiraIssue: any, testPlan?: string) => `You are a Senior QA Architect and Test Design Expert with deep expertise in functional testing, UI validation, usability testing, exploratory testing, and requirement analysis.
 
-Your task is to analyze the provided source material (Jira Issue details, and the optional Test Plan below) and generate a comprehensive, production-ready Test Case Specification Document.
+Your responsibility is to analyze the provided source material (Jira details, requirement documents, user stories, acceptance criteria, or visual attachments/videos if uploaded) and generate an extremely detailed and comprehensive test suite.
+
+Your objective is maximum coverage, not minimum test cases.
 
 Jira Issue: ${jiraIssue.key}
 Summary: ${jiraIssue.summary}
@@ -380,22 +387,25 @@ Description: ${jiraIssue.description}
 Priority: ${jiraIssue.priority}
 ${testPlan ? `\n\n### TEST PLAN CONTEXT:\nUse the following Test Plan to derive and align all your test cases:\n${testPlan}\n` : ''}
 
-### Instructions & Coverage Requirements:
-You must ensure fair, rigorous, and deep test coverage. Do not summarize or skip sections. You must generate ALL possible detailed test cases to exhaustively cover every requirement, interface, component, procedure, and scenario defined in the Test Plan or Jira Issue. Do not limit yourself to 10-15 cases; generate as many as necessary to guarantee 100% test coverage of the features and plans.
-Ensure that you cover the following categories/buckets:
-1. Happy Path / Positive Test Cases: Standard user journeys where everything works as intended.
-2. Negative Test Cases: Invalid inputs, unauthorized actions, and graceful error handling.
-3. Boundary Value Analysis (BVA) & Equivalence Partitioning: Testing minimum, maximum, just-below, and just-above limits for all inputs/fields.
-4. Edge Cases & Corner Cases: Rare, complex, or multi-condition scenarios (e.g., rapid clicking, session timeouts, network drops mid-transaction, conflicting states).
-5. UI/UX & Accessibility (WCAG): Visual alignment, responsiveness, error message clarity, and basic accessibility.
-6. Security & Permissions: Role-based access control (RBAC), data leaks, and unauthorized URL/API hitting.
-7. Performance: Response times, page weights, loading indicators.
+### GRANULARITY RULE & TEST CASE GENERATION PRINCIPLES:
+- Generate highly detailed test cases. Never skip minor actions.
+- Never combine multiple validations into one step. Every click, field, message, state change, and UI element must be validated separately.
+- Each step must be ONE atomic, minor action with expected results. Do not write generic or high-level steps.
+- Minimum 10-40 steps per testcase when applicable. One validation per step.
+- Create positive, negative, boundary, and edge scenarios.
+- Generate missing scenarios using QA best practices.
+- Maximize coverage rather than minimizing testcase count.
+- Include UI validations, data validations, backend validations, and usability validations.
 
-### Execution Strategy:
-- Analyze the input document thoroughly. If details are missing for certain fields, assume standard industry best practices but flag them as "Assumptions Made" in the test case precondition or description.
-- Be specific. Do not use generic steps like "Enter invalid data." Specify *what* invalid data (e.g., "Enter 256 characters into a 50-character limit field").
-- Ensure coverage includes both major functionalities (core workflows) and minor functionalities (tooltips, state persistence, cancel buttons).
-- CRITICAL QUANTITY RULE: Generate AT LEAST 15 to 30 distinct, detailed, and non-redundant test cases. Generate as many as possible to guarantee 100% test coverage.
+### COVERAGE REQUIREMENTS:
+1. Functional Testing: Positive & negative scenarios, CRUD, Search, Filter, Sort, Pagination, Navigation, Import/Export, Session timeout, Logout.
+2. UI Validation: Validate labels, text, font, alignment, buttons (visibility, color, hover, focus, state), text fields (placeholders, limits, cursor), dropdowns, checkboxes, tables, modals, tooltips.
+3. Video Analysis (if video was uploaded): Perform frame-by-frame analysis. Identify pages, tabs, buttons, fields, menus, dialogs, popups, state changes, loading indicators, transitions. Convert every observed user action into detailed test steps and generate additional scenarios.
+4. Negative & Boundary Value Analysis (BVA): Empty fields, invalid inputs, boundary values, special chars, SQL injection, XSS payloads, invalid file formats, concurrent actions.
+5. Cross-Browser & Responsiveness: Chrome, Firefox, Safari, Edge, Mobile, Tablet, Desktop layouts.
+6. Accessibility (WCAG): Tab navigation, focus order, keyboard support, screen readers, color contrast, ARIA labels.
+7. Performance: Page load times, spinner visibility, API response, memory usage.
+8. Security & API: Authentication, authorization, session management, URL manipulation, request/response schema validations.
 
 ### Output Format:
 Output ONLY a raw JSON array. Do not wrap the JSON in markdown code blocks or any other formatting. No explanations, no text before or after the array.
@@ -733,15 +743,47 @@ class AIService {
     }
   }
 
-  private async callAI(provider: AIProvider, apiKey: string, model: string, prompt: string, timeoutMs = 300000): Promise<string> {
+  private async callAI(
+    provider: AIProvider,
+    apiKey: string,
+    model: string,
+    prompt: string,
+    timeoutMs = 300000,
+    mediaFiles?: MediaFileData[]
+  ): Promise<string> {
     if (!apiKey) throw new Error(`Please configure your ${provider} API key in the settings panel.`)
     if (!model) throw new Error('Please select a model in the settings panel.')
 
     try {
+      let contentPayload: any = prompt
+
+      if (mediaFiles && mediaFiles.length > 0) {
+        if (provider === 'gemini') {
+          contentPayload = [
+            { type: 'text', text: prompt },
+            ...mediaFiles.map(file => ({
+              type: 'inline_data',
+              mimeType: file.mimeType,
+              data: file.base64
+            }))
+          ]
+        } else {
+          contentPayload = [
+            { type: 'text', text: prompt },
+            ...mediaFiles.map(file => ({
+              type: 'image_url',
+              image_url: {
+                url: `data:${file.mimeType};base64,${file.base64}`
+              }
+            }))
+          ]
+        }
+      }
+
       const response = await axios.post(`${API_BASE}/${provider}/complete`, {
         apiKey,
         model,
-        messages: [{ role: 'user', content: prompt }]
+        messages: [{ role: 'user', content: contentPayload }]
       }, { timeout: timeoutMs })
 
       return response.data.content || response.data.response?.choices?.[0]?.message?.content || ''
@@ -752,19 +794,39 @@ class AIService {
     }
   }
 
-  async generateTestStrategy(provider: AIProvider, apiKey: string, model: string, jiraIssue: any): Promise<string> {
+  async generateTestStrategy(
+    provider: AIProvider,
+    apiKey: string,
+    model: string,
+    jiraIssue: any,
+    mediaFiles?: MediaFileData[]
+  ): Promise<string> {
     const prompt = buildTestStrategyPrompt(jiraIssue)
-    return this.callAI(provider, apiKey, model, prompt, 300000)
+    return this.callAI(provider, apiKey, model, prompt, 300000, mediaFiles)
   }
 
-  async generateTestPlan(provider: AIProvider, apiKey: string, model: string, jiraIssue: any, testStrategy?: string): Promise<string> {
+  async generateTestPlan(
+    provider: AIProvider,
+    apiKey: string,
+    model: string,
+    jiraIssue: any,
+    testStrategy?: string,
+    mediaFiles?: MediaFileData[]
+  ): Promise<string> {
     const prompt = buildTestPlanPrompt(jiraIssue, testStrategy)
-    return this.callAI(provider, apiKey, model, prompt, 300000)
+    return this.callAI(provider, apiKey, model, prompt, 300000, mediaFiles)
   }
 
-  async generateTestCases(provider: AIProvider, apiKey: string, model: string, jiraIssue: any, testPlan?: string): Promise<TestCase[]> {
+  async generateTestCases(
+    provider: AIProvider,
+    apiKey: string,
+    model: string,
+    jiraIssue: any,
+    testPlan?: string,
+    mediaFiles?: MediaFileData[]
+  ): Promise<TestCase[]> {
     const prompt = buildTestCasesPrompt(jiraIssue, testPlan)
-    const raw = await this.callAI(provider, apiKey, model, prompt, 300000)
+    const raw = await this.callAI(provider, apiKey, model, prompt, 300000, mediaFiles)
 
     return this.parseTestCasesJSON(raw)
   }
