@@ -723,19 +723,73 @@ Your output JSON must match this EXACT schema:
     "id": "TC-001",
     "summary": "Verify [Scenario - specific action under specific condition]",
     "issueType": "Test",
-    "priority": "Critical", // Critical, High, Medium, or Low
-    "labels": "functional,smoke", // Comma-separated tags
-    "testType": "Functional", // Functional, UI, Negative, Boundary, Security, etc.
+    "priority": "Critical",
+    "labels": "functional,smoke",
+    "testType": "Functional",
     "precondition": "[Preconditions]",
-    "scenarioType": "happy_path", // happy_path, negative, boundary, edge_case, ui_ux, security, performance
+    "scenarioType": "happy_path",
     "component": "[Module / Feature]",
     "estimatedTime": "15m",
     "steps": [
       {
         "stepNumber": 1,
-        "action": "[Detailed Test Step - e.g. Launch application]",
-        "testData": "N/A", // or specific value
-        "expectedResult": "[Expected Result - e.g. Application loads successfully]"
+        "action": "Launch the application URL in the browser",
+        "testData": "https://example.com/login",
+        "expectedResult": "Application loads successfully, showing the login form and landing interface without console errors."
+      },
+      {
+        "stepNumber": 2,
+        "action": "Verify visibility and alignment of the application logo in the header",
+        "testData": "N/A",
+        "expectedResult": "Logo is visible, correctly rendered, and aligned properly with UI design guidelines."
+      },
+      {
+        "stepNumber": 3,
+        "action": "Verify that the page title matches the expected header copy",
+        "testData": "N/A",
+        "expectedResult": "Page title is correct and matches the UX spec exactly."
+      },
+      {
+        "stepNumber": 4,
+        "action": "Verify visibility, placeholder text, and active cursor state of the Username text field",
+        "testData": "N/A",
+        "expectedResult": "Username field is visible, has placeholder 'Enter your username', and displays focus outline when clicked."
+      },
+      {
+        "stepNumber": 5,
+        "action": "Enter a valid username string into the Username field",
+        "testData": "qa_architect_user",
+        "expectedResult": "Username field accepts the input and displays the text clearly in high-contrast color."
+      },
+      {
+        "stepNumber": 6,
+        "action": "Verify visibility, placeholder text, and masking/obscuring functionality of the Password text field",
+        "testData": "N/A",
+        "expectedResult": "Password field is visible, has placeholder 'Enter your password', and masks entered characters by default."
+      },
+      {
+        "stepNumber": 7,
+        "action": "Enter a valid password string into the Password field",
+        "testData": "P@ssword123",
+        "expectedResult": "Password field accepts input, and characters are correctly obscured with dot/asterisk characters."
+      },
+      {
+        "stepNumber": 8,
+        "action": "Verify that the Login button is enabled, visible, aligned, and styled in green color",
+        "testData": "N/A",
+        "expectedResult": "Login button is visible, aligned correctly, displays green background color, and is enabled."
+      },
+      {
+        "stepNumber": 9,
+        "action": "Click the Login button",
+        "testData": "N/A",
+        "expectedResult": "Button displays a loading spinner state, gets disabled to prevent double clicks, and issues authentication API call."
+      },
+      {
+        "stepNumber": 10,
+        "action": "Verify response status and page redirect to the main Dashboard panel",
+        "testData": "N/A",
+        "expectedResult": "API responds with status code 200, user is authenticated, and the page redirects to the main Dashboard."
       }
     ],
     "status": "Not Executed"
@@ -743,7 +797,8 @@ Your output JSON must match this EXACT schema:
 ]
 
 ### ADDITIONAL COMPLIANCE REQUIREMENT:
-Before finalizing, perform a second-pass review and generate any missed scenarios, hidden validations, edge cases, field-level checks, UI consistency checks, state transition validations, and error handling scenarios. Coverage completeness is more important than minimizing the number of test cases.
+- CRITICAL RULE ON STEP GRANULARITY: You MUST write highly detailed test steps. Do not compress multiple actions or checks into a single step. Follow the 10-step template pattern shown in the schema above for every test case. Every test case should typically have between 10 to 40 steps, where each step represents exactly ONE atomic interaction or validation. Do NOT summarize or abbreviate.
+- Before finalizing, perform a second-pass review and generate any missed scenarios, hidden validations, edge cases, field-level checks, UI consistency checks, state transition validations, and error handling scenarios. Coverage completeness is more important than minimizing the number of test cases.
 
 Start your response with [ and end with ]. Output ONLY the raw JSON array (no markdown code blocks, no text before or after).`
 
@@ -1108,9 +1163,63 @@ Each new test case MUST follow this EXACT JSON schema:
     "steps": [
       {
         "stepNumber": 1,
-        "action": "[Detailed Test Step]",
+        "action": "Launch the application and navigate to the specified page URL",
+        "testData": "https://example.com/login",
+        "expectedResult": "Application loads successfully and displays the correct layout structure."
+      },
+      {
+        "stepNumber": 2,
+        "action": "Verify visibility and alignment of the logo element in the header",
         "testData": "N/A",
-        "expectedResult": "[Expected Result]"
+        "expectedResult": "Logo is visible, aligned correctly, and is not truncated."
+      },
+      {
+        "stepNumber": 3,
+        "action": "Verify that the page title matches the expected copy exactly",
+        "testData": "N/A",
+        "expectedResult": "Page title is correct and matches design specs."
+      },
+      {
+        "stepNumber": 4,
+        "action": "Verify visibility, placeholder text, and mandatory indicator (*) of the Username text field",
+        "testData": "N/A",
+        "expectedResult": "Username field is visible, has correct placeholder, and is marked as mandatory."
+      },
+      {
+        "stepNumber": 5,
+        "action": "Enter a valid username into the Username field",
+        "testData": "test_username",
+        "expectedResult": "Username field accepts the input and displays the text clearly."
+      },
+      {
+        "stepNumber": 6,
+        "action": "Verify visibility and placeholder text of the Password text field",
+        "testData": "N/A",
+        "expectedResult": "Password field is visible and has correct placeholder."
+      },
+      {
+        "stepNumber": 7,
+        "action": "Enter a password into the Password field and verify character masking",
+        "testData": "secret_pass",
+        "expectedResult": "Password field accepts input and obfuscates the entered characters."
+      },
+      {
+        "stepNumber": 8,
+        "action": "Verify that the Login button is visible and enabled by default",
+        "testData": "N/A",
+        "expectedResult": "Login button is visible, active, and clickable."
+      },
+      {
+        "stepNumber": 9,
+        "action": "Click the Login button",
+        "testData": "N/A",
+        "expectedResult": "Login button displays a loading spinner, gets disabled, and sends api authentication request."
+      },
+      {
+        "stepNumber": 10,
+        "action": "Verify response status and successful redirect to the Dashboard page",
+        "testData": "N/A",
+        "expectedResult": "Response status is 200, user is authenticated, and Dashboard loads successfully."
       }
     ],
     "status": "Not Executed"
@@ -1118,7 +1227,8 @@ Each new test case MUST follow this EXACT JSON schema:
 ]
 
 ### ADDITIONAL COMPLIANCE REQUIREMENT:
-Before finalizing, perform a second-pass review and generate any missed scenarios, hidden validations, edge cases, field-level checks, UI consistency checks, state transition validations, and error handling scenarios. Coverage completeness is more important than minimizing the number of test cases.
+- CRITICAL RULE ON STEP GRANULARITY: You MUST write highly detailed test steps. Do not compress multiple actions or checks into a single step. Follow the 10-step template pattern shown in the schema below for every test case. Every test case should typically have between 10 to 40 steps, where each step represents exactly ONE atomic interaction or validation. Do NOT summarize or abbreviate.
+- Before finalizing, perform a second-pass review and generate any missed scenarios, hidden validations, edge cases, field-level checks, UI consistency checks, state transition validations, and error handling scenarios. Coverage completeness is more important than minimizing the number of test cases.
 
 Output the complete JSON array or the noMoreCases JSON object only. Start your response with [ or { and end with ] or }`
 }
@@ -1481,9 +1591,63 @@ Each test case MUST follow this EXACT JSON schema:
     "steps": [
       {
         "stepNumber": 1,
-        "action": "[Detailed Test Step]",
+        "action": "Launch the application and navigate to the specified page URL",
+        "testData": "https://example.com/login",
+        "expectedResult": "Application loads successfully and displays the correct layout structure."
+      },
+      {
+        "stepNumber": 2,
+        "action": "Verify visibility and alignment of the logo element in the header",
         "testData": "N/A",
-        "expectedResult": "[Expected Result]"
+        "expectedResult": "Logo is visible, aligned correctly, and is not truncated."
+      },
+      {
+        "stepNumber": 3,
+        "action": "Verify that the page title matches the expected copy exactly",
+        "testData": "N/A",
+        "expectedResult": "Page title is correct and matches design specs."
+      },
+      {
+        "stepNumber": 4,
+        "action": "Verify visibility, placeholder text, and mandatory indicator (*) of the Username text field",
+        "testData": "N/A",
+        "expectedResult": "Username field is visible, has correct placeholder, and is marked as mandatory."
+      },
+      {
+        "stepNumber": 5,
+        "action": "Enter a valid username into the Username field",
+        "testData": "test_username",
+        "expectedResult": "Username field accepts the input and displays the text clearly."
+      },
+      {
+        "stepNumber": 6,
+        "action": "Verify visibility and placeholder text of the Password text field",
+        "testData": "N/A",
+        "expectedResult": "Password field is visible and has correct placeholder."
+      },
+      {
+        "stepNumber": 7,
+        "action": "Enter a password into the Password field and verify character masking",
+        "testData": "secret_pass",
+        "expectedResult": "Password field accepts input and obfuscates the entered characters."
+      },
+      {
+        "stepNumber": 8,
+        "action": "Verify that the Login button is visible and enabled by default",
+        "testData": "N/A",
+        "expectedResult": "Login button is visible, active, and clickable."
+      },
+      {
+        "stepNumber": 9,
+        "action": "Click the Login button",
+        "testData": "N/A",
+        "expectedResult": "Login button displays a loading spinner, gets disabled, and sends api authentication request."
+      },
+      {
+        "stepNumber": 10,
+        "action": "Verify response status and successful redirect to the Dashboard page",
+        "testData": "N/A",
+        "expectedResult": "Response status is 200, user is authenticated, and Dashboard loads successfully."
       }
     ],
     "status": "Not Executed"
@@ -1491,7 +1655,8 @@ Each test case MUST follow this EXACT JSON schema:
 ]
 
 ### ADDITIONAL COMPLIANCE REQUIREMENT:
-Before finalizing, perform a second-pass review and generate any missed scenarios, hidden validations, edge cases, field-level checks, UI consistency checks, state transition validations, and error handling scenarios. Coverage completeness is more important than minimizing the number of test cases.
+- CRITICAL RULE ON STEP GRANULARITY: You MUST write highly detailed test steps. Do not compress multiple actions or checks into a single step. Follow the 10-step template pattern shown in the schema below for every test case. Every test case should typically have between 10 to 40 steps, where each step represents exactly ONE atomic interaction or validation. Do NOT summarize or abbreviate.
+- Before finalizing, perform a second-pass review and generate any missed scenarios, hidden validations, edge cases, field-level checks, UI consistency checks, state transition validations, and error handling scenarios. Coverage completeness is more important than minimizing the number of test cases.
 
 Output the complete JSON array only. Start your response with [ and end with ]`
 }
@@ -1947,9 +2112,63 @@ Each object in the JSON array must strictly follow this schema:
     "steps": [
       {
         "stepNumber": 1,
-        "action": "[Detailed Test Step]",
+        "action": "Launch the application and navigate to the specified page URL",
+        "testData": "https://example.com/login",
+        "expectedResult": "Application loads successfully and displays the correct layout structure."
+      },
+      {
+        "stepNumber": 2,
+        "action": "Verify visibility and alignment of the logo element in the header",
         "testData": "N/A",
-        "expectedResult": "[Expected Result]"
+        "expectedResult": "Logo is visible, aligned correctly, and is not truncated."
+      },
+      {
+        "stepNumber": 3,
+        "action": "Verify that the page title matches the expected copy exactly",
+        "testData": "N/A",
+        "expectedResult": "Page title is correct and matches design specs."
+      },
+      {
+        "stepNumber": 4,
+        "action": "Verify visibility, placeholder text, and mandatory indicator (*) of the Username text field",
+        "testData": "N/A",
+        "expectedResult": "Username field is visible, has correct placeholder, and is marked as mandatory."
+      },
+      {
+        "stepNumber": 5,
+        "action": "Enter a valid username into the Username field",
+        "testData": "test_username",
+        "expectedResult": "Username field accepts the input and displays the text clearly."
+      },
+      {
+        "stepNumber": 6,
+        "action": "Verify visibility and placeholder text of the Password text field",
+        "testData": "N/A",
+        "expectedResult": "Password field is visible and has correct placeholder."
+      },
+      {
+        "stepNumber": 7,
+        "action": "Enter a password into the Password field and verify character masking",
+        "testData": "secret_pass",
+        "expectedResult": "Password field accepts input and obfuscates the entered characters."
+      },
+      {
+        "stepNumber": 8,
+        "action": "Verify that the Login button is visible and enabled by default",
+        "testData": "N/A",
+        "expectedResult": "Login button is visible, active, and clickable."
+      },
+      {
+        "stepNumber": 9,
+        "action": "Click the Login button",
+        "testData": "N/A",
+        "expectedResult": "Login button displays a loading spinner, gets disabled, and sends api authentication request."
+      },
+      {
+        "stepNumber": 10,
+        "action": "Verify response status and successful redirect to the Dashboard page",
+        "testData": "N/A",
+        "expectedResult": "Response status is 200, user is authenticated, and Dashboard loads successfully."
       }
     ],
     "status": "Not Executed"
@@ -1964,7 +2183,8 @@ Each object in the JSON array must strictly follow this schema:
 5. Extract as many test cases as are clearly described in the document.
 
 ### ADDITIONAL COMPLIANCE REQUIREMENT:
-Before finalizing, perform a second-pass review and generate any missed scenarios, hidden validations, edge cases, field-level checks, UI consistency checks, state transition validations, and error handling scenarios. Coverage completeness is more important than minimizing the number of test cases.
+- CRITICAL RULE ON STEP GRANULARITY: You MUST write highly detailed test steps. Do not compress multiple actions or checks into a single step. Follow the 10-step template pattern shown in the schema below for every test case. Every test case should typically have between 10 to 40 steps, where each step represents exactly ONE atomic interaction or validation. Do NOT summarize or abbreviate.
+- Before finalizing, perform a second-pass review and generate any missed scenarios, hidden validations, edge cases, field-level checks, UI consistency checks, state transition validations, and error handling scenarios. Coverage completeness is more important than minimizing the number of test cases.
 
 Output ONLY the raw JSON array. Start with [ and end with ]`
 
