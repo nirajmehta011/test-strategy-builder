@@ -17,6 +17,8 @@ export interface GenerationInput {
   figmaToken?: string
   scopeOption?: 'specific' | 'all'
   focusArea?: string
+  videoAnalysisMode?: 'frames' | 'direct'
+  rawVideoFiles?: { mimeType: string; base64: string; name: string }[]
 }
 
 interface JiraIDInputProps {
@@ -55,6 +57,10 @@ export default function JiraIDInput({ onGenerate, onAutomateFile, loading, activ
   const [scopeOption, setScopeOption] = useState<'specific' | 'all'>('all')
   const [focusArea, setFocusArea] = useState('')
   const [extractingVideo, setExtractingVideo] = useState(false)
+  // Video analysis mode: 'frames' = extract screenshots (default), 'direct' = send raw video base64
+  const [videoAnalysisMode, setVideoAnalysisMode] = useState<'frames' | 'direct'>('frames')
+  // Raw video files for direct video mode (not frame-extracted)
+  const [rawVideoFiles, setRawVideoFiles] = useState<{ file: File; base64: string; mimeType: string }[]>([])
 
   const extractFramesFromVideo = (file: File): Promise<{ name: string; base64: string; mimeType: string }[]> => {
     return new Promise((resolve, reject) => {
@@ -209,6 +215,15 @@ export default function JiraIDInput({ onGenerate, onAutomateFile, loading, activ
     })
   }
 
+  const readVideoAsBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = (e) => resolve(((e.target?.result as string) || '').split(',')[1] || '')
+      reader.onerror = () => reject(new Error('Failed to read video file.'))
+      reader.readAsDataURL(file)
+    })
+  }
+
   const handleVisualFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (files) {
@@ -217,20 +232,31 @@ export default function JiraIDInput({ onGenerate, onAutomateFile, loading, activ
       
       for (const file of fileList) {
         if (file.type.startsWith('video/')) {
-          setExtractingVideo(true)
-          try {
-            const frames = await extractFramesFromVideo(file)
-            setVisualFiles(prev => [
-              ...prev,
-              ...frames.map(f => ({
-                file: new File([], f.name, { type: f.mimeType }),
-                base64: f.base64
-              }))
-            ])
-          } catch (err: any) {
-            setValidationError(`Failed to extract frames from video: ${err.message}`)
-          } finally {
-            setExtractingVideo(false)
+          if (videoAnalysisMode === 'direct') {
+            // Direct mode: store raw video as base64, no frame extraction
+            try {
+              const base64 = await readVideoAsBase64(file)
+              setRawVideoFiles(prev => [...prev, { file, base64, mimeType: file.type || 'video/mp4' }])
+            } catch (err: any) {
+              setValidationError(`Failed to read video file: ${err.message}`)
+            }
+          } else {
+            // Frames mode: existing frame extraction
+            setExtractingVideo(true)
+            try {
+              const frames = await extractFramesFromVideo(file)
+              setVisualFiles(prev => [
+                ...prev,
+                ...frames.map(f => ({
+                  file: new File([], f.name, { type: f.mimeType }),
+                  base64: f.base64
+                }))
+              ])
+            } catch (err: any) {
+              setValidationError(`Failed to extract frames from video: ${err.message}`)
+            } finally {
+              setExtractingVideo(false)
+            }
           }
         } else {
           const reader = new FileReader()
@@ -296,7 +322,9 @@ export default function JiraIDInput({ onGenerate, onAutomateFile, loading, activ
 
   const handleVisualSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (visualFiles.length === 0 && !figmaUrl) {
+    const hasFrames = visualFiles.length > 0
+    const hasRawVideo = rawVideoFiles.length > 0
+    if (!hasFrames && !hasRawVideo && !figmaUrl) {
       setValidationError('Please upload at least one screenshot/video or fetch frames from Figma.')
       return
     }
@@ -318,7 +346,11 @@ export default function JiraIDInput({ onGenerate, onAutomateFile, loading, activ
       scopeOption,
       focusArea: focusArea.trim(),
       figmaUrl: figmaUrl.trim() || undefined,
-      figmaToken: figmaToken.trim() || undefined
+      figmaToken: figmaToken.trim() || undefined,
+      videoAnalysisMode,
+      rawVideoFiles: rawVideoFiles.length > 0
+        ? rawVideoFiles.map(rv => ({ mimeType: rv.mimeType, base64: rv.base64, name: rv.file.name }))
+        : undefined
     }, selectedMode)
   }
 
@@ -842,6 +874,57 @@ export default function JiraIDInput({ onGenerate, onAutomateFile, loading, activ
                     </span>
                   </label>
                   
+                  {/* ── Video Analysis Mode Toggle ── */}
+                  <div style={{ marginBottom: 10, padding: '10px 12px', background: 'rgba(99,102,241,0.05)', border: '1px solid rgba(99,102,241,0.15)', borderRadius: 8 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 7, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Video Analysis Mode</div>
+                    <div style={{ display: 'flex', gap: 6, borderRadius: 6, overflow: 'hidden', border: '1px solid var(--border)' }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setVideoAnalysisMode('frames')
+                          setRawVideoFiles([])
+                          setValidationError(null)
+                        }}
+                        disabled={loading}
+                        style={{
+                          flex: 1, padding: '7px 6px', border: 'none', cursor: 'pointer',
+                          fontSize: 11, fontWeight: 600, transition: 'all 0.2s',
+                          background: videoAnalysisMode === 'frames' ? 'var(--accent)' : 'transparent',
+                          color: videoAnalysisMode === 'frames' ? '#fff' : 'var(--sidebar-muted)',
+                        }}
+                      >
+                        🎞️ Frame-by-Frame
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setVideoAnalysisMode('direct')
+                          setVisualFiles(prev => prev.filter(vf => !vf.file.name.includes('_frame_')))
+                          setValidationError(null)
+                        }}
+                        disabled={loading}
+                        style={{
+                          flex: 1, padding: '7px 6px', border: 'none', cursor: 'pointer',
+                          fontSize: 11, fontWeight: 600, transition: 'all 0.2s',
+                          background: videoAnalysisMode === 'direct' ? '#7c3aed' : 'transparent',
+                          color: videoAnalysisMode === 'direct' ? '#fff' : 'var(--sidebar-muted)',
+                        }}
+                      >
+                        🎬 Direct Video
+                      </button>
+                    </div>
+                    <div style={{ marginTop: 7, fontSize: 10, color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                      {videoAnalysisMode === 'frames'
+                        ? '🎞️ Extracts key screenshots from video — works with all vision models (OpenAI, Claude, Gemini)'
+                        : '🎬 Sends the full video natively — best with Gemini 1.5/2.0 · no frame-limit · captures all UI transitions'}
+                    </div>
+                    {videoAnalysisMode === 'direct' && (
+                      <div style={{ marginTop: 6, padding: '4px 8px', background: 'rgba(124,58,237,0.1)', borderRadius: 4, fontSize: 10, color: '#a78bfa' }}>
+                        ⚡ Also works with <b>Smart Rules Mode</b> — generates all cases from video metadata, zero API tokens
+                      </div>
+                    )}
+                  </div>
+
                   {extractingVideo ? (
                     <div 
                       style={{ 
@@ -880,9 +963,13 @@ export default function JiraIDInput({ onGenerate, onAutomateFile, loading, activ
                         textAlign: 'center'
                       }}
                     >
-                      <span style={{ fontSize: 28, marginBottom: 8 }}>🎬</span>
-                      <span style={{ fontSize: 13, fontWeight: 'bold', color: 'var(--text-primary)' }}>Click to upload screenshot or feature video</span>
-                      <span style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>Accepts MP4, WEBM, PNG, JPG, JPEG</span>
+                      <span style={{ fontSize: 28, marginBottom: 8 }}>{videoAnalysisMode === 'direct' ? '🎬' : '🎞️'}</span>
+                      <span style={{ fontSize: 13, fontWeight: 'bold', color: 'var(--text-primary)' }}>
+                        {videoAnalysisMode === 'direct' ? 'Click to upload video for direct analysis' : 'Click to upload screenshot or feature video'}
+                      </span>
+                      <span style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
+                        {videoAnalysisMode === 'direct' ? 'Accepts MP4, WEBM, MOV (up to 50MB) — sent natively to Gemini' : 'Accepts MP4, WEBM, PNG, JPG, JPEG'}
+                      </span>
                       <input
                         type="file"
                         multiple
@@ -894,6 +981,32 @@ export default function JiraIDInput({ onGenerate, onAutomateFile, loading, activ
                     </label>
                   )}
                   
+                  {/* Direct video file list */}
+                  {rawVideoFiles.length > 0 && (
+                    <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <span style={{ fontSize: 11, fontWeight: 'bold', color: '#a78bfa' }}>🎬 Direct Video Files ({rawVideoFiles.length}):</span>
+                      {rawVideoFiles.map((rv, idx) => (
+                        <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(124,58,237,0.07)', border: '1px solid rgba(124,58,237,0.2)', borderRadius: 6, padding: '7px 12px', gap: 8 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                            <span style={{ fontSize: 18 }}>🎬</span>
+                            <div style={{ minWidth: 0 }}>
+                              <div style={{ fontSize: 11, fontWeight: 600, color: '#c4b5fd', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 200 }}>{rv.file.name}</div>
+                              <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{Math.round(rv.file.size / 1024 / 1024 * 10) / 10} MB · {rv.mimeType}</div>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setRawVideoFiles(prev => prev.filter((_, i) => i !== idx))}
+                            style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: 12, cursor: 'pointer', flexShrink: 0 }}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Extracted frame thumbnails */}
                   {visualFiles.length > 0 && (
                     <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
                       <span style={{ fontSize: 11, fontWeight: 'bold', color: 'var(--text-muted)' }}>Uploaded Assets ({visualFiles.length}):</span>
@@ -939,6 +1052,7 @@ export default function JiraIDInput({ onGenerate, onAutomateFile, loading, activ
                     </div>
                   )}
                 </div>
+
 
                 {/* Figma importer */}
                 <div>

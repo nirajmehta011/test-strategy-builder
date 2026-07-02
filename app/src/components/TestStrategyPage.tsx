@@ -116,8 +116,9 @@ export default function TestStrategyPage() {
     })
 
     try {
-      // ── Smart Rules Mode: skip API key validation for cases-only generation ──
+      // ── Smart Rules Mode: skip API key validation for cases-only generation (including visual) ──
       const isRulesOnlyCases = settings.preferences.useRulesEngine && mode === 'cases'
+      const isRulesVisualCases = settings.preferences.useRulesEngine && input.source === 'visual' && mode === 'cases'
 
       const apiKey = getApiKey()
       if (!apiKey && !isRulesOnlyCases) {
@@ -150,6 +151,12 @@ export default function TestStrategyPage() {
           )
         }
       }
+
+      // Resolve the correct media files — direct video mode sends raw video, frames mode sends JPEG screenshots
+      const resolvedMediaFiles: typeof input.mediaFiles =
+        input.videoAnalysisMode === 'direct' && input.rawVideoFiles && input.rawVideoFiles.length > 0
+          ? input.rawVideoFiles
+          : input.mediaFiles
 
       if (mode === 'workflow') {
         setWorkflowState({
@@ -217,18 +224,22 @@ export default function TestStrategyPage() {
             updated: new Date().toISOString()
           }
         } else if (input.source === 'visual') {
-          const hasFiles = !!(input.mediaFiles && input.mediaFiles.length > 0)
-          const fileNames = input.mediaFiles ? input.mediaFiles.map(f => f.name).join(', ') : 'None'
+          const isDirect = input.videoAnalysisMode === 'direct'
+          const rawVideoNames = input.rawVideoFiles ? input.rawVideoFiles.map(f => f.name).join(', ') : ''
+          const frameNames = input.mediaFiles ? input.mediaFiles.map(f => f.name).join(', ') : 'None'
+          const fileNames = isDirect && rawVideoNames ? rawVideoNames : frameNames
           const figmaUrl = input.figmaUrl || ''
           const focusArea = input.focusArea || ''
           const scopeOption = input.scopeOption || 'all'
+          const analysisMode = isDirect ? 'Direct Video Analysis (full video sent to AI)' : 'Frame-by-Frame Screenshot Analysis'
 
-          setCurrentJiraId((input.mediaFiles && hasFiles) ? `Visual Spec: ${input.mediaFiles[0].name}` : 'Visual Mockups')
+          setCurrentJiraId(fileNames ? `Visual Spec: ${fileNames.split(',')[0].trim()}` : 'Visual Mockups')
 
           fetchedIssue = {
             key: 'VISUAL',
-            summary: hasFiles ? `Visual Walkthrough / Screenshots: ${fileNames}` : `Figma Mockups: ${figmaUrl}`,
+            summary: fileNames ? `Visual Walkthrough / ${isDirect ? 'Video' : 'Screenshots'}: ${fileNames}` : `Figma Mockups: ${figmaUrl}`,
             description: `Visual specification requirement analysis:
+- Analysis Mode: ${analysisMode}
 - Uploaded Spec Files: ${fileNames}
 - Figma URL: ${figmaUrl || 'None'}
 - Scope Focus Option: ${scopeOption === 'specific' ? 'LIMIT TO SPECIFIC FEATURE ONLY' : 'ALL POSSIBLE CASES / FEATURES'}
@@ -253,7 +264,7 @@ export default function TestStrategyPage() {
         const startStrategy = Date.now()
         let stratResult = ''
         try {
-          stratResult = await aiService.generateTestStrategy(prov, apiKey, model, fetchedIssue, input.mediaFiles)
+          stratResult = await aiService.generateTestStrategy(prov, apiKey!, model, fetchedIssue, resolvedMediaFiles)
           const duration = Math.round((Date.now() - startStrategy) / 1000)
           setStrategy(stratResult)
           setWorkflowState(prev => ({
@@ -282,7 +293,7 @@ export default function TestStrategyPage() {
         const startPlan = Date.now()
         let planResult = ''
         try {
-          planResult = await aiService.generateTestPlan(prov, apiKey, model, fetchedIssue, stratResult, input.mediaFiles)
+          planResult = await aiService.generateTestPlan(prov, apiKey!, model, fetchedIssue, stratResult, resolvedMediaFiles)
           const duration = Math.round((Date.now() - startPlan) / 1000)
           setTestPlan(planResult)
           setWorkflowState(prev => ({
@@ -314,7 +325,7 @@ export default function TestStrategyPage() {
           if (settings.preferences.useRulesEngine) {
             casesResult = rulesEngine.generate(fetchedIssue)
           } else {
-            casesResult = await aiService.generateTestCases(prov, apiKey, model, fetchedIssue, planResult, input.mediaFiles)
+          casesResult = await aiService.generateTestCases(prov, apiKey!, model, fetchedIssue, planResult, resolvedMediaFiles)
           }
           const duration = Math.round((Date.now() - startCases) / 1000)
           setTestCases(casesResult)
@@ -425,19 +436,23 @@ export default function TestStrategyPage() {
             updated: new Date().toISOString()
           }
         } else if (input.source === 'visual') {
-          const hasFiles = !!(input.mediaFiles && input.mediaFiles.length > 0)
-          const fileNames = input.mediaFiles ? input.mediaFiles.map(f => f.name).join(', ') : 'None'
+          const isDirect2 = input.videoAnalysisMode === 'direct'
+          const rawVideoNames2 = input.rawVideoFiles ? input.rawVideoFiles.map(f => f.name).join(', ') : ''
+          const frameNames2 = input.mediaFiles ? input.mediaFiles.map(f => f.name).join(', ') : 'None'
+          const fileNames2 = isDirect2 && rawVideoNames2 ? rawVideoNames2 : frameNames2
           const figmaUrl = input.figmaUrl || ''
           const focusArea = input.focusArea || ''
           const scopeOption = input.scopeOption || 'all'
+          const analysisMode2 = isDirect2 ? 'Direct Video Analysis (full video sent to AI)' : 'Frame-by-Frame Screenshot Analysis'
 
-          setCurrentJiraId((input.mediaFiles && hasFiles) ? `Visual Spec: ${input.mediaFiles[0].name}` : 'Visual Mockups')
+          setCurrentJiraId(fileNames2 ? `Visual Spec: ${fileNames2.split(',')[0].trim()}` : 'Visual Mockups')
 
           fetchedIssue = {
             key: 'VISUAL',
-            summary: hasFiles ? `Visual Walkthrough / Screenshots: ${fileNames}` : `Figma Mockups: ${figmaUrl}`,
+            summary: fileNames2 ? `Visual Walkthrough / ${isDirect2 ? 'Video' : 'Screenshots'}: ${fileNames2}` : `Figma Mockups: ${figmaUrl}`,
             description: `Visual specification requirement analysis:
-- Uploaded Spec Files: ${fileNames}
+- Analysis Mode: ${analysisMode2}
+- Uploaded Spec Files: ${fileNames2}
 - Figma URL: ${figmaUrl || 'None'}
 - Scope Focus Option: ${scopeOption === 'specific' ? 'LIMIT TO SPECIFIC FEATURE ONLY' : 'ALL POSSIBLE CASES / FEATURES'}
 - Focus/Feature Scope Instructions: ${focusArea || 'None'}`,
@@ -458,21 +473,31 @@ export default function TestStrategyPage() {
         const model = getModel()
     
         if (mode === 'strategy') {
-          const result = await aiService.generateTestStrategy(prov, apiKey, model, fetchedIssue, input.mediaFiles)
+          const result = await aiService.generateTestStrategy(prov, apiKey!, model, fetchedIssue, resolvedMediaFiles)
           setStrategy(result)
           setViewTab('strategy')
         } else if (mode === 'plan') {
-          const result = await aiService.generateTestPlan(prov, apiKey, model, fetchedIssue, undefined, input.mediaFiles)
+          const result = await aiService.generateTestPlan(prov, apiKey!, model, fetchedIssue, undefined, resolvedMediaFiles)
           setTestPlan(result)
           setViewTab('plan')
         } else if (mode === 'cases') {
           if (settings.preferences.useRulesEngine) {
             // ── Smart Rules Mode: zero API tokens, instant, client-side ──
-            const result = rulesEngine.generate(fetchedIssue)
+            // For visual source, enrich the issue description with video/focus context
+            const rulesIssue = isRulesVisualCases ? {
+              ...fetchedIssue,
+              description: [
+                fetchedIssue.description,
+                input.focusArea ? `\nFocus Area: ${input.focusArea}` : '',
+                input.rawVideoFiles?.length ? `\nVideo files: ${input.rawVideoFiles.map(f => f.name).join(', ')}` : '',
+                input.mediaFiles?.length ? `\nScreenshot frames: ${input.mediaFiles.length} frames extracted` : '',
+              ].join('').trim()
+            } : fetchedIssue
+            const result = rulesEngine.generate(rulesIssue)
             setTestCases(result)
             setProviderUsed('rules')
           } else {
-            const result = await aiService.generateTestCases(prov, apiKey, model, fetchedIssue, undefined, input.mediaFiles)
+            const result = await aiService.generateTestCases(prov, apiKey!, model, fetchedIssue, undefined, resolvedMediaFiles)
             setTestCases(result)
           }
           setViewTab('cases')
