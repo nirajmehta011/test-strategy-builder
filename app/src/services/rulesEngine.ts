@@ -40,6 +40,8 @@ export interface ParsedFeature {
   hasReport: boolean
   hasNotif: boolean
   hasWorkflow: boolean
+  scopeOption?: 'specific' | 'all'
+  focusArea?: string
 }
 
 interface RuleTemplate {
@@ -151,8 +153,56 @@ function extractDataTypes(text: string): string[] {
   return DATA_TYPE_KEYWORDS.filter(k => lower.includes(k))
 }
 
+function cleanFilename(name: string): string {
+  // Strip extensions
+  let cleaned = name.replace(/\.(mp4|webm|mov|png|jpg|jpeg|gif|pdf|csv|xlsx|xls|docx|doc|txt|md)$/i, '');
+  // Replace symbols/separators with spaces
+  cleaned = cleaned.replace(/[-_]/g, ' ');
+  // Strip non-semantic structural words that trigger false positive rules
+  cleaned = cleaned.replace(/\b(video|screenshot|frame|figma|upload|spec|document|walkthrough|file|demo|test)\b/gi, ' ');
+  return cleaned.trim();
+}
+
 export function parseRequirement(title: string, description: string): ParsedFeature {
-  const fullText = `${title} ${description}`
+  const descLower = description.toLowerCase();
+  
+  // 1. Detect scopeOption
+  let scopeOption: 'all' | 'specific' = 'all';
+  if (descLower.includes('limit to specific feature') || descLower.includes('scope focus option: limit to specific') || descLower.includes('scopeoption: specific')) {
+    scopeOption = 'specific';
+  }
+  
+  // 2. Extract focusArea / instructions
+  let focusArea = '';
+  // Match Focus/Feature Scope Instructions: OR Focus/Feature Scope Instructions: OR Focus Area:
+  const focusMatches = description.match(/(?:focus\/feature scope instructions:|focus area:|instructions:)\s*([^\n]+)/i);
+  if (focusMatches && focusMatches[1]) {
+    focusArea = focusMatches[1].trim();
+  }
+  
+  // 3. Extract uploaded files and clean them of extensions and structural keywords
+  const fileNamesMatch = description.match(/(?:uploaded spec files:|video files:|screenshot frames:)\s*([^\n]+)/i);
+  let cleanedFiles = '';
+  if (fileNamesMatch && fileNamesMatch[1]) {
+    const filesList = fileNamesMatch[1].split(',');
+    cleanedFiles = filesList.map(cleanFilename).join(' ');
+  }
+
+  // 4. Compute text for matching keywords
+  let matchText = '';
+  if (scopeOption === 'specific') {
+    // Strictly restrict keyword extraction to the focus/instructions text + title
+    matchText = focusArea || title || '';
+  } else {
+    // Use title, focusArea (context instructions), and cleaned file/entity names
+    matchText = `${title} ${focusArea} ${cleanedFiles}`;
+  }
+
+  // Double-clean matchText: strip out templates & technical terms from matching
+  matchText = matchText.replace(/\b(video|screenshot|frame|figma|upload|spec|document|walkthrough|file|analysis|mode|source|details)\b/gi, ' ');
+
+  const fullText = matchText.trim();
+  
   return {
     title: title || 'Feature',
     rawText: fullText,
@@ -180,12 +230,34 @@ export function parseRequirement(title: string, description: string): ParsedFeat
     hasReport: hasAny(fullText, REPORT_KEYWORDS),
     hasNotif: hasAny(fullText, NOTIF_KEYWORDS),
     hasWorkflow: hasAny(fullText, WORKFLOW_KEYWORDS),
+    scopeOption,
+    focusArea: focusArea || undefined
   }
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const entityLabel = (f: ParsedFeature) => f.entities[0] || f.title || 'Feature'
+const entityLabel = (f: ParsedFeature) => {
+  if (f.focusArea) {
+    // Keep focusArea clean and short (up to 3-4 words)
+    const cleanedFocus = f.focusArea.replace(/\b(validation|flow|creation|management|view|form|steps)\b/gi, '').trim();
+    if (cleanedFocus) {
+      const words = cleanedFocus.split(/\s+/).slice(0, 3).join(' ');
+      if (words) return words;
+    }
+    return f.focusArea.split(/\s+/).slice(0, 3).join(' ');
+  }
+  if (f.entities && f.entities.length > 0) {
+    return f.entities[0];
+  }
+  let t = f.title || 'Feature';
+  // Strip common structural prefixes
+  t = t.replace(/(visual walkthrough|screenshots|video|figma mockups|document|scraped website|document name|document specification content|url|doc):/gi, '');
+  t = t.replace(/\.(mp4|webm|mov|png|jpg|jpeg|gif|pdf|csv|xlsx|xls|docx|doc|txt|md)$/i, '');
+  t = t.replace(/[-_]/g, ' ');
+  return t.trim() || 'Feature';
+}
+
 const entityPlural = (f: ParsedFeature) => {
   const e = entityLabel(f)
   return e.endsWith('s') ? e : `${e}s`
@@ -968,15 +1040,76 @@ const RULE_CATALOG: RuleTemplate[] = [
       { action: 'Verify payment success confirmation page appears', testData: 'N/A', expectedResult: 'Order confirmation page shows: "Payment successful!" with order ID and summary.' },
       { action: 'Verify confirmation email is sent to the user', testData: 'N/A', expectedResult: 'Email arrives with order details, total charged, and reference number.' },
       { action: 'Test with declined card (insufficient funds)', testData: '4000 0000 0000 9995 (Stripe declined card)', expectedResult: 'Payment fails gracefully. Error: "Your card was declined. Please try another card."' },
-      { action: 'Test with expired card', testData: 'Expiry: 12/20 (past date)', expectedResult: 'Validation error: "Your card has expired." No charge is attempted.' },
     ],
   },
+
+  // ═══════════════════════════════════════════════════════════════
+  // 21. FALLBACK / GENERIC RULES
+  // ═══════════════════════════════════════════════════════════════
+
+  {
+    id: 'GENERIC-001',
+    category: 'functional', scenarioType: 'happy_path', priority: 'High', testType: 'Functional',
+    labels: 'functional,smoke', estimatedTime: '15m',
+    trigger: () => true,
+    title: f => `Verify core functional flow and action sequence of ${entityLabel(f)}`,
+    component: f => entityLabel(f),
+    precondition: f => `${entityLabel(f)} interface is loaded and ready for interaction.`,
+    steps: f => [
+      { action: `Navigate to the primary ${entityLabel(f)} view or page`, testData: 'N/A', expectedResult: `${entityLabel(f)} page renders without console warnings or layout bugs.` },
+      { action: 'Check that all input textboxes, select dropdowns, and button controls are visible', testData: 'N/A', expectedResult: 'All visual controls match design mockups.' },
+      { action: 'Enter valid test values into all required and optional input controls', testData: 'N/A', expectedResult: 'Fields accept entries and clear validation visual flags.' },
+      { action: 'Click the primary action button to process the transaction or form', testData: 'N/A', expectedResult: 'Submit triggers a loading loader spinner state and disables buttons.' },
+      { action: 'Verify the successful confirmation feedback displays on completion', testData: 'N/A', expectedResult: 'Confirmation alert or success badge appears on page.' },
+      { action: 'Verify saved records display accurate values matching input data', testData: 'N/A', expectedResult: 'View shows the newly entered fields saved.' }
+    ]
+  }
 ]
 
 // ─── Matcher & Builder ────────────────────────────────────────────────────────
 
 export function matchRules(parsed: ParsedFeature): RuleTemplate[] {
-  return RULE_CATALOG.filter(rule => rule.trigger(parsed))
+  const allMatched = RULE_CATALOG.filter(rule => rule.id !== 'GENERIC-001' && rule.trigger(parsed))
+
+  // If specific feature scope is active, filter the matched rules by keywords in the focus area
+  if (parsed.scopeOption === 'specific' && parsed.focusArea) {
+    const focusWords = parsed.focusArea.toLowerCase()
+      .split(/[\s,_\-\/]+/)
+      .map(w => w.trim())
+      .filter(w => w.length > 2)
+
+    if (focusWords.length > 0) {
+      const filtered = allMatched.filter(rule => {
+        const ruleTitle = rule.title(parsed).toLowerCase()
+        const ruleLabels = rule.labels.toLowerCase()
+        const ruleId = rule.id.toLowerCase()
+        const ruleCategory = rule.category.toLowerCase()
+        
+        return focusWords.some(word => 
+          ruleTitle.includes(word) || 
+          ruleLabels.includes(word) || 
+          ruleId.includes(word) || 
+          ruleCategory.includes(word)
+        )
+      })
+
+      // If specific focus filtered everything out, return the generic fallback rule template
+      if (filtered.length === 0) {
+        const genericRule = RULE_CATALOG.find(r => r.id === 'GENERIC-001')
+        return genericRule ? [genericRule] : (allMatched.length > 0 ? [allMatched[0]] : [])
+      }
+
+      return filtered
+    }
+  }
+
+  // Default: return all standard matching rules (ensure fallback GENERIC-001 isn't included unless empty)
+  if (allMatched.length === 0) {
+    const genericRule = RULE_CATALOG.find(r => r.id === 'GENERIC-001')
+    return genericRule ? [genericRule] : []
+  }
+
+  return allMatched
 }
 
 function buildSteps(rawSteps: Array<{ action: string; testData: string; expectedResult: string }>): TestStep[] {
@@ -1081,63 +1214,144 @@ class RulesEngine {
    */
   private generateSecondPassCases(existingCases: TestCase[]): TestCase[] {
     const parsed = this.state.parsed!
-    const entity = parsed.entities[0] || parsed.title || 'Feature'
+    const entity = entityLabel(parsed)
     const startIdx = existingCases.length + 1
 
-    const additionalCases: TestCase[] = [
+    const edgeCaseTemplates = [
       {
-        id: `TC-${String(startIdx).padStart(3, '0')}`,
-        summary: `Verify ${entity} behavior during network interruption / offline mode`,
-        issueType: 'Test', priority: 'High', labels: 'network,offline,negative',
-        testType: 'Negative', precondition: 'Application is running. Network can be simulated offline.',
-        scenarioType: 'negative', component: 'Network Handling', estimatedTime: '15m',
-        status: 'Not Executed',
+        title: `Verify ${entity} behavior during sudden network disconnection`,
+        category: 'negative', scenarioType: 'negative', priority: 'High', testType: 'Negative',
+        labels: 'network,offline,negative', estimatedTime: '15m',
+        precondition: `Application is running. User is actively viewing the ${entity} view.`,
         steps: [
-          { stepNumber: 1, action: 'Open the application and navigate to the main page', testData: 'N/A', expectedResult: 'Application loads normally.' },
-          { stepNumber: 2, action: 'Simulate a network disconnection using DevTools', testData: 'DevTools → Network → Offline', expectedResult: 'Network becomes unavailable.' },
-          { stepNumber: 3, action: 'Attempt to submit a form or perform a data operation', testData: 'N/A', expectedResult: 'Operation fails gracefully. Error message: "No internet connection. Please check your network."' },
-          { stepNumber: 4, action: 'Verify the app does NOT crash or show a blank white screen', testData: 'N/A', expectedResult: 'Application remains functional. Offline indicator or banner appears.' },
-          { stepNumber: 5, action: 'Restore network connection and retry the operation', testData: 'DevTools → Network → Online', expectedResult: 'Network restores. Operation succeeds on retry. Any queued actions process.' },
-          { stepNumber: 6, action: 'Verify no data corruption or duplicate submissions occurred', testData: 'N/A', expectedResult: 'Only one record was created/updated. No duplicates from retry.' },
-        ],
+          { action: `Open the ${entity} view in the browser`, testData: 'N/A', expectedResult: 'View loads successfully.' },
+          { action: 'Disconnect the network connection (simulate offline state in developer tools)', testData: 'Network -> Offline', expectedResult: 'Network status changes to offline.' },
+          { action: 'Attempt to submit a form or trigger a state change action', testData: 'N/A', expectedResult: 'Form submission is blocked. A clear "No connection" toast warning appears.' },
+          { action: 'Verify application state remains responsive and does not freeze', testData: 'N/A', expectedResult: 'UI handles offline gracefully. Controls are disabled as appropriate.' },
+          { action: 'Re-enable network connection and retry the action', testData: 'Network -> Online', expectedResult: 'Network is restored. Action completes successfully.' }
+        ]
       },
       {
-        id: `TC-${String(startIdx + 1).padStart(3, '0')}`,
-        summary: `Verify ${entity} browser back/forward button behavior`,
-        issueType: 'Test', priority: 'Medium', labels: 'navigation,browser,ux',
-        testType: 'UI/UX', precondition: 'User has navigated through at least 3 pages.',
-        scenarioType: 'ui_ux', component: 'Navigation', estimatedTime: '10m',
-        status: 'Not Executed',
+        title: `Verify input field validation and boundary rules on ${entity} form`,
+        category: 'boundary', scenarioType: 'boundary', priority: 'High', testType: 'Functional',
+        labels: 'boundary,validation,forms', estimatedTime: '12m',
+        precondition: `User is on the creation/edit form for ${entity}.`,
         steps: [
-          { stepNumber: 1, action: 'Navigate through 3+ pages in the application', testData: 'N/A', expectedResult: 'Browser history stack contains 3+ entries.' },
-          { stepNumber: 2, action: 'Click the browser Back button', testData: 'N/A', expectedResult: 'Previous page loads correctly without a full page reload.' },
-          { stepNumber: 3, action: 'Verify page state is correctly restored after back navigation', testData: 'N/A', expectedResult: 'Scroll position, search filters, or form state is preserved (if designed).' },
-          { stepNumber: 4, action: 'Click the browser Forward button', testData: 'N/A', expectedResult: 'Navigates forward. Next page renders correctly.' },
-          { stepNumber: 5, action: 'Verify the URL updates correctly with each navigation', testData: 'N/A', expectedResult: 'URL in address bar reflects the current page route.' },
-          { stepNumber: 6, action: 'Hard refresh (F5 or Cmd+R) and verify the page reloads correctly', testData: 'N/A', expectedResult: 'Page reloads without errors. Authenticated state is preserved via session.' },
-        ],
+          { action: 'Locate primary input fields on the form', testData: 'N/A', expectedResult: 'Fields are visible and empty.' },
+          { action: 'Input values matching exact maximum character limits', testData: 'Name: Max length string', expectedResult: 'Character counter shows maximum limit reached.' },
+          { action: 'Try typing beyond the maximum character limit', testData: 'Extra characters', expectedResult: 'Extra characters are ignored or validation warning triggers.' },
+          { action: 'Paste an extremely long string using copy-paste', testData: 'Very long pasted string', expectedResult: 'Pasted string is auto-truncated to fit maximum size limit.' },
+          { action: 'Submit the form and verify data is stored correctly', testData: 'N/A', expectedResult: 'Data persists successfully without truncation errors.' }
+        ]
       },
       {
-        id: `TC-${String(startIdx + 2).padStart(3, '0')}`,
-        summary: `Verify ${entity} concurrent multi-user interaction handling`,
-        issueType: 'Test', priority: 'High', labels: 'concurrency,multi-user,edge-case',
-        testType: 'Functional', precondition: 'Two user accounts available. Same record accessible to both.',
-        scenarioType: 'edge_case', component: 'Data Consistency', estimatedTime: '20m',
-        status: 'Not Executed',
+        title: `Verify strict input sanitization on ${entity} text fields`,
+        category: 'security', scenarioType: 'security', priority: 'Critical', testType: 'Security',
+        labels: 'security,xss,sanitization', estimatedTime: '15m',
+        precondition: `User is on the ${entity} input/management page.`,
         steps: [
-          { stepNumber: 1, action: 'Log in as User A and open a record for editing', testData: 'User A opens Record ID: 101', expectedResult: 'User A sees the record in edit mode.' },
-          { stepNumber: 2, action: 'Simultaneously log in as User B in a different browser/session and open the same record', testData: 'User B opens Record ID: 101', expectedResult: 'User B sees the same record.' },
-          { stepNumber: 3, action: 'User A modifies a field and saves', testData: 'Name: "User A Version"', expectedResult: 'User A\'s save succeeds.' },
-          { stepNumber: 4, action: 'User B attempts to save a conflicting modification to the same record', testData: 'Name: "User B Version"', expectedResult: 'Conflict is detected. User B receives a conflict warning: "This record was updated by another user."' },
-          { stepNumber: 5, action: 'Verify the final saved state of the record in the database', testData: 'N/A', expectedResult: 'The record reflects User A\'s values (last write wins) or a merge conflict UI is shown.' },
-          { stepNumber: 6, action: 'Verify no data loss or corruption occurred', testData: 'N/A', expectedResult: 'All fields have valid values. No partial-update corruption.' },
-        ],
+          { action: 'Open the data submission form', testData: 'N/A', expectedResult: 'Form is active.' },
+          { action: 'Enter standard XSS script payloads in text fields', testData: '<script>alert(1)</script>', expectedResult: 'Input is accepted without browser validation blocker.' },
+          { action: 'Submit the form and save the record', testData: 'N/A', expectedResult: 'Record saves successfully.' },
+          { action: 'Verify the saved record on details view page', testData: 'N/A', expectedResult: 'Script displays literally as text. No alert popup is executed.' }
+        ]
       },
+      {
+        title: `Verify API rate limiting on ${entity} update and query requests`,
+        category: 'performance', scenarioType: 'performance', priority: 'High', testType: 'Performance',
+        labels: 'api,rate-limit,performance', estimatedTime: '15m',
+        precondition: `Access credentials for ${entity} endpoints are configured.`,
+        steps: [
+          { action: 'Trigger a rapid burst of API requests to the endpoint', testData: '100 requests / 10 seconds', expectedResult: 'Requests are sent successfully.' },
+          { action: 'Monitor HTTP status codes returned by the server', testData: 'N/A', expectedResult: 'Server begins returning HTTP 429 Too Many Requests.' },
+          { action: 'Verify Retry-After response header value is present', testData: 'N/A', expectedResult: 'Retry-After header specifies delay duration.' },
+          { action: 'Wait out the specified retry duration and re-test', testData: 'N/A', expectedResult: 'Requests succeed again normally.' }
+        ]
+      },
+      {
+        title: `Verify conflict resolution during concurrent modifications to same ${entity} record`,
+        category: 'functional', scenarioType: 'edge_case', priority: 'High', testType: 'Functional',
+        labels: 'concurrency,sync', estimatedTime: '18m',
+        precondition: 'Two test sessions are open on same record ID.',
+        steps: [
+          { action: 'User A opens edit page for record', testData: 'N/A', expectedResult: 'Record opens in edit view.' },
+          { action: 'User B opens edit page for same record in separate browser', testData: 'N/A', expectedResult: 'Record opens in edit view for User B.' },
+          { action: 'User A changes status and saves', testData: 'Status: In Progress', expectedResult: 'User A changes saved.' },
+          { action: 'User B edits name and attempts to save', testData: 'Name: New Version', expectedResult: 'Conflict is detected. UI displays: "This record has been updated by another session. Please reload."' }
+        ]
+      },
+      {
+        title: `Verify contrast ratios for ${entity} views in both Light and Dark theme modes`,
+        category: 'accessibility', scenarioType: 'ui_ux', priority: 'Medium', testType: 'Accessibility',
+        labels: 'a11y,theme,contrast', estimatedTime: '10m',
+        precondition: `Application is open. Light/Dark theme switch is accessible.`,
+        steps: [
+          { action: 'Switch application theme to Light Mode', testData: 'N/A', expectedResult: 'Interface changes to Light style.' },
+          { action: 'Check readability of all text headings and body components', testData: 'N/A', expectedResult: 'Text is legible. Contrast exceeds 4.5:1 ratio.' },
+          { action: 'Toggle theme to Dark Mode', testData: 'N/A', expectedResult: 'Interface transitions cleanly to Dark style.' },
+          { action: 'Verify contrast on high-priority warning badges and action buttons', testData: 'N/A', expectedResult: 'Contrast remains compliant with accessibility standards.' }
+        ]
+      },
+      {
+        title: `Verify complete keyboard navigation hierarchy on ${entity} panels`,
+        category: 'accessibility', scenarioType: 'ui_ux', priority: 'Medium', testType: 'Accessibility',
+        labels: 'a11y,keyboard', estimatedTime: '12m',
+        precondition: 'Application dashboard is open. Mouse is disconnected.',
+        steps: [
+          { action: 'Press the Tab key repeatedly to navigate active controls', testData: 'N/A', expectedResult: 'Focus moves sequentially across inputs.' },
+          { action: 'Verify standard keyboard controls (Enter, Space, arrow keys) work on active elements', testData: 'N/A', expectedResult: 'Click events are triggered by Enter key.' },
+          { action: 'Verify focus ring is highly visible on current element', testData: 'N/A', expectedResult: 'A clear focus boundary outline is shown.' }
+        ]
+      },
+      {
+        title: `Verify ${entity} behavior when browser session cookie is manually deleted`,
+        category: 'security', scenarioType: 'negative', priority: 'Critical', testType: 'Security',
+        labels: 'session,cookie,logout', estimatedTime: '10m',
+        precondition: 'User is authenticated.',
+        steps: [
+          { action: 'Navigate to the primary dashboard page', testData: 'N/A', expectedResult: 'Dashboard page loads.' },
+          { action: 'Open developer console and delete active session cookies', testData: 'Console -> Application -> Cookies -> Delete', expectedResult: 'Active session cookies are removed.' },
+          { action: 'Attempt to interact with any page element or refresh view', testData: 'N/A', expectedResult: 'Request fails authorization check. User is immediately redirected to login page.' }
+        ]
+      },
+      {
+        title: `Verify zoom rendering and viewport scaling up to 200% on ${entity} page`,
+        category: 'responsive', scenarioType: 'ui_ux', priority: 'Medium', testType: 'UI/UX',
+        labels: 'responsive,zoom,layout', estimatedTime: '10m',
+        precondition: 'Application dashboard is open.',
+        steps: [
+          { action: 'Scale browser zoom level to 150%', testData: 'Ctrl + / Cmd +', expectedResult: 'Layout adapts cleanly. Scrollbars appear where needed.' },
+          { action: 'Increase zoom level to 200%', testData: 'N/A', expectedResult: 'Font and grid scale. Elements do not overlap. Text content remains fully readable.' }
+        ]
+      }
     ]
 
-    // Only return cases that bring us under MAX
+    const newCases: TestCase[] = []
+    let currentIdx = startIdx
+
+    for (const temp of edgeCaseTemplates) {
+      const alreadyExists = existingCases.some(c => c.summary.toLowerCase() === temp.title.toLowerCase())
+      if (alreadyExists) continue
+
+      newCases.push({
+        id: `TC-${String(currentIdx).padStart(3, '0')}`,
+        summary: temp.title,
+        issueType: 'Test',
+        priority: temp.priority as any,
+        labels: temp.labels,
+        testType: temp.testType,
+        precondition: temp.precondition,
+        scenarioType: temp.scenarioType as any,
+        component: entity,
+        estimatedTime: temp.estimatedTime,
+        status: 'Not Executed',
+        steps: buildSteps(temp.steps)
+      })
+      currentIdx++
+    }
+
     const remaining = MAX_TOTAL_CASES - existingCases.length
-    return additionalCases.slice(0, remaining)
+    return newCases.slice(0, remaining)
   }
 }
 
