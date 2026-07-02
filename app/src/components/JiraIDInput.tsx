@@ -1187,7 +1187,7 @@ export default function JiraIDInput({ onGenerate, onAutomateFile, loading, activ
               <button
                 type="button"
                 onClick={handleVisualSubmit}
-                disabled={loading || (visualFiles.length === 0 && !figmaUrl)}
+                disabled={loading || (visualFiles.length === 0 && rawVideoFiles.length === 0 && !figmaUrl)}
                 className="btn-primary btn-generate"
                 style={{ 
                   width: '100%', 
