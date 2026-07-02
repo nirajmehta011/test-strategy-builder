@@ -3,6 +3,7 @@ import { useSettings } from '../context/SettingsContext'
 import jiraService from '../services/jiraService'
 import aiService from '../services/aiService'
 import type { TestCase } from '../services/aiService'
+import rulesEngine from '../services/rulesEngine'
 import { exportAsMarkdown, exportAsJSON, copyToClipboard, cleanHTMLToText, exportAllAssetsAsZip } from '../services/exportService'
 import JiraIDInput, { GenerationInput } from './JiraIDInput'
 import type { GenerationMode } from './JiraIDInput'
@@ -115,8 +116,11 @@ export default function TestStrategyPage() {
     })
 
     try {
+      // ── Smart Rules Mode: skip API key validation for cases-only generation ──
+      const isRulesOnlyCases = settings.preferences.useRulesEngine && mode === 'cases'
+
       const apiKey = getApiKey()
-      if (!apiKey) {
+      if (!apiKey && !isRulesOnlyCases) {
         const names: Record<string, string> = {
           groq: 'Groq', openrouter: 'OpenRouter', gemini: 'Gemini', openai: 'OpenAI'
         }
@@ -126,7 +130,7 @@ export default function TestStrategyPage() {
       const prov = settings.ai.provider
       const model = getModel()
 
-      if (input.source === 'visual') {
+      if (input.source === 'visual' && !isRulesOnlyCases) {
         const isGemini = prov === 'gemini'
         const isOpenAI = prov === 'openai' && (model.startsWith('gpt-4o') || model.includes('vision') || model === 'gpt-4-turbo')
         const isOpenRouter = prov === 'openrouter' && (
@@ -307,7 +311,11 @@ export default function TestStrategyPage() {
         const startCases = Date.now()
         let casesResult: TestCase[] = []
         try {
-          casesResult = await aiService.generateTestCases(prov, apiKey, model, fetchedIssue, planResult, input.mediaFiles)
+          if (settings.preferences.useRulesEngine) {
+            casesResult = rulesEngine.generate(fetchedIssue)
+          } else {
+            casesResult = await aiService.generateTestCases(prov, apiKey, model, fetchedIssue, planResult, input.mediaFiles)
+          }
           const duration = Math.round((Date.now() - startCases) / 1000)
           setTestCases(casesResult)
           setWorkflowState(prev => ({
@@ -458,8 +466,15 @@ export default function TestStrategyPage() {
           setTestPlan(result)
           setViewTab('plan')
         } else if (mode === 'cases') {
-          const result = await aiService.generateTestCases(prov, apiKey, model, fetchedIssue, undefined, input.mediaFiles)
-          setTestCases(result)
+          if (settings.preferences.useRulesEngine) {
+            // ── Smart Rules Mode: zero API tokens, instant, client-side ──
+            const result = rulesEngine.generate(fetchedIssue)
+            setTestCases(result)
+            setProviderUsed('rules')
+          } else {
+            const result = await aiService.generateTestCases(prov, apiKey, model, fetchedIssue, undefined, input.mediaFiles)
+            setTestCases(result)
+          }
           setViewTab('cases')
         }
     
@@ -477,16 +492,26 @@ export default function TestStrategyPage() {
     setIsAddingCases(true)
     setError(null)
     try {
-      const apiKey = getApiKey()
-      const prov = settings.ai.provider
-      const model = getModel()
-      const response = await aiService.generateMoreTestCases(prov, apiKey, model, jiraIssue, testCases)
-      
-      if (response.noMoreCases) {
-        setNoMoreCases(true)
+      if (settings.preferences.useRulesEngine) {
+        // ── Smart Rules Mode: generate more from unused rule buckets ──
+        const response = rulesEngine.generateMore(testCases)
+        if (response.noMoreCases) {
+          setNoMoreCases(true)
+        } else {
+          setTestCases([...testCases, ...response.testCases])
+          setNoMoreCases(false)
+        }
       } else {
-        setTestCases([...testCases, ...response.testCases])
-        setNoMoreCases(false)
+        const apiKey = getApiKey()
+        const prov = settings.ai.provider
+        const model = getModel()
+        const response = await aiService.generateMoreTestCases(prov, apiKey, model, jiraIssue, testCases)
+        if (response.noMoreCases) {
+          setNoMoreCases(true)
+        } else {
+          setTestCases([...testCases, ...response.testCases])
+          setNoMoreCases(false)
+        }
       }
     } catch (err: any) {
       setError(err.message || 'Failed to generate more test cases. Please try again.')
@@ -634,14 +659,19 @@ export default function TestStrategyPage() {
         <div className="loading-container animate-in">
           <div className="loading-ring" />
           <p className="loading-text">
-            {loadingMessages[activeMode]} with {providerLabels[settings.ai.provider] || settings.ai.provider}
+            {settings.preferences.useRulesEngine && activeMode === 'cases'
+              ? '🧠 Generating test cases with Smart Rules Engine'
+              : `${loadingMessages[activeMode]} with ${providerLabels[settings.ai.provider] || settings.ai.provider}`}
             <span className="loading-dots" />
           </p>
           <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
-            Larger issues may take up to 90 seconds for comprehensive output
+            {settings.preferences.useRulesEngine && activeMode === 'cases'
+              ? 'Zero API tokens used · Instant client-side rules matching'
+              : 'Larger issues may take up to 90 seconds for comprehensive output'}
           </p>
         </div>
       )}
+
 
       {/* Workflow Stepper Progress Timeline */}
       {activeMode === 'workflow' && (loading || workflowState.status !== 'idle') && (

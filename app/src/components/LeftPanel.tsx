@@ -289,6 +289,44 @@ export default function LeftPanel() {
                   <span className="toggle-slider" />
                 </label>
               </div>
+
+              {/* ── Test Case Generation Mode Toggle ── */}
+              <div style={{ marginTop: 14 }}>
+                <div className="field-label" style={{ marginBottom: 8 }}>Test Case Generation</div>
+                <div style={{ display: 'flex', gap: 6, borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border)' }}>
+                  <button
+                    onClick={() => updatePreferences({ useRulesEngine: false })}
+                    style={{
+                      flex: 1, padding: '7px 4px', border: 'none', cursor: 'pointer',
+                      fontSize: 11, fontWeight: 600, transition: 'all 0.2s',
+                      background: !settings.preferences.useRulesEngine ? 'var(--accent)' : 'transparent',
+                      color: !settings.preferences.useRulesEngine ? '#fff' : 'var(--sidebar-muted)',
+                    }}
+                  >
+                    ⚡ AI-Powered
+                  </button>
+                  <button
+                    onClick={() => updatePreferences({ useRulesEngine: true })}
+                    style={{
+                      flex: 1, padding: '7px 4px', border: 'none', cursor: 'pointer',
+                      fontSize: 11, fontWeight: 600, transition: 'all 0.2s',
+                      background: settings.preferences.useRulesEngine ? '#059669' : 'transparent',
+                      color: settings.preferences.useRulesEngine ? '#fff' : 'var(--sidebar-muted)',
+                    }}
+                  >
+                    🧠 Smart Rules
+                  </button>
+                </div>
+                {settings.preferences.useRulesEngine ? (
+                  <div className="status-badge success" style={{ marginTop: 8, fontSize: 10 }}>
+                    ✓ Zero API tokens · No rate limits · Instant generation
+                  </div>
+                ) : (
+                  <div style={{ marginTop: 6, fontSize: 10, color: 'var(--sidebar-muted)' }}>
+                    Uses selected AI provider &amp; model
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>

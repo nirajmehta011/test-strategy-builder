@@ -23,6 +23,7 @@ export interface Settings {
     darkMode: boolean
     autoSave: boolean
     sidebarCollapsed: boolean
+    useRulesEngine: boolean
   }
 }
 
@@ -51,7 +52,7 @@ const defaultSettings: Settings = {
     geminiModel: 'gemini-1.5-pro',
     openAiModel: 'gpt-4o',
   },
-  preferences: { darkMode: true, autoSave: true, sidebarCollapsed: false }
+  preferences: { darkMode: true, autoSave: true, sidebarCollapsed: false, useRulesEngine: false }
 }
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
